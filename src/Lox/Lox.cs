@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace lox;
+namespace cslox.lox;
 
 public class Lox
 {

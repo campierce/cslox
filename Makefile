@@ -1,12 +1,15 @@
+SLN := cslox.sln
+PRJ := src/Lox/Lox.csproj
+
+.DEFAULT_GOAL = run
+
 .PHONY: default clean build run
 
-default: run
-
 clean:
-	dotnet clean src/cslox.csproj
+	dotnet clean $(SLN)
 
 build:
-	dotnet build src/cslox.csproj
+	dotnet build $(SLN)
 
 run:
-	dotnet run --project src/cslox.csproj
+	dotnet run --project $(PRJ)
