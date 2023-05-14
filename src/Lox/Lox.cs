@@ -1,4 +1,5 @@
 using System.Text;
+using cslox.lox.scanner;
 
 namespace cslox.lox;
 
@@ -36,7 +37,7 @@ public class Lox
 
     private static void RunPrompt()
     {
-        using StreamReader reader = new StreamReader(Console.OpenStandardInput());
+        using StreamReader reader = new(Console.OpenStandardInput());
 
         while (true)
         {
@@ -53,7 +54,7 @@ public class Lox
 
     private static void Run(string source)
     {
-        Scanner scanner = new Scanner(source);
+        Scanner scanner = new(source);
         List<Token> tokens = scanner.ScanTokens();
 
         // for now, just print

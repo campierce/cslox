@@ -1,4 +1,4 @@
-namespace cslox.lox;
+namespace cslox.lox.scanner;
 
 enum TokenType
 {

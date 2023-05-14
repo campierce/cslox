@@ -1,11 +1,11 @@
-namespace cslox.lox;
+namespace cslox.lox.scanner;
 
 internal class Token
 {
-    private readonly TokenType type;
-    private readonly string lexeme;
-    private readonly object? literal;
-    private readonly int line;
+    internal TokenType type { get; }
+    internal string lexeme { get; }
+    internal object? literal { get; }
+    internal int line { get; }
 
     internal Token(TokenType type, string lexeme, object? literal, int line)
     {

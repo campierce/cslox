@@ -1,31 +1,31 @@
-namespace cslox.lox;
+namespace cslox.lox.scanner;
 
 /// <summary>
 /// Tokenizes a piece of text.
 /// </summary>
 internal class Scanner
 {
-    #region Fields/Props
+    #region Properties
     /// <summary>
     /// Source text to scan.
     /// </summary>
-    private readonly string source;
+    private string source { get; }
     /// <summary>
     /// Tokens derived from source.
     /// </summary>
-    private readonly List<Token> tokens = new List<Token>();
+    private List<Token> tokens { get; } = new();
     /// <summary>
     /// Start index of the token under consideration.
     /// </summary>
-    private int start = 0;
+    private int start { get; set; } = 0;
     /// <summary>
     /// Current index in source.
     /// </summary>
-    private int current = 0;
+    private int current { get; set; } = 0;
     /// <summary>
     /// Line number in source.
     /// </summary>
-    private int line = 1;
+    private int line { get; set; } = 1;
     /// <summary>
     /// Whether the source has no more characters for us to scan.
     /// </summary>
@@ -37,7 +37,7 @@ internal class Scanner
     /// <summary>
     /// Map from keyword literals to their token types.
     /// </summary>
-    private static readonly Dictionary<string, TokenType> keywords = new Dictionary<string, TokenType>
+    private static readonly Dictionary<string, TokenType> keywords = new()
     {
         ["and"] = TokenType.AND,
         ["class"] = TokenType.CLASS,
