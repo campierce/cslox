@@ -155,7 +155,7 @@ internal class Scanner
                 {
                     Number();
                 }
-                // (user-defined) identifier, or keyword
+                // identifier or keyword
                 else if (IsAlpha(c))
                 {
                     Identifier();
