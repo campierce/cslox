@@ -58,16 +58,18 @@ internal class Scanner
     };
     #endregion
 
-    internal Scanner(string source)
+    #region Constructors
+    public Scanner(string source)
     {
         this.source = source;
     }
+    #endregion
 
     #region API
     /// <summary>
     /// Builds a tokens list from the source text.
     /// </summary>
-    internal List<Token> ScanTokens()
+    public List<Token> ScanTokens()
     {
         while (!isAtEnd)
         {

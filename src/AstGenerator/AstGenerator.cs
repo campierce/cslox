@@ -21,34 +21,50 @@ public class AstGenerator
         string outputDir = args[0];
         DefineAst(
             outputDir,
-            "Expression",
-            // "operator" is a keyword, so prefix with underscore
+            "Expr",
+            // "operator" is a keyword, so prefix it
             new List<string> {
-                "Binary   : Expression left, Token _operator, Expression right",
-                "Grouping : Expression expression",
+                $"Binary   : Expr left, Token {conditionalPrefix}operator, Expr right",
+                "Grouping : Expr expression",
                 "Literal  : Object value",
-                "Unary    : Token _operator, Expression right"
+                $"Unary    : Token {conditionalPrefix}operator, Expr right"
             }
         );
     }
 
+    #region Writer helpers
     private static void DefineAst(string outputDir, string baseName, List<string> types)
     {
         string path = Path.Combine(outputDir, baseName + ".cs");
         using StreamWriter writer = new(path, false, Encoding.UTF8);
+        
+        // top of file
         writer.Write($@"using cslox.lox.scanner;
 
 namespace cslox.lox.ir;");
+
+        // abc
         writer.Write($@"
 
 internal abstract class {baseName}
 {{");
+
+        // abstract methods
+        writer.Write(@"
+    public abstract R Accept<R>(Visitor<R> visitor);");
+
+        // visitor interface
+        DefineVisitor(writer, baseName, types);
+
+        // concrete subclasses
         foreach (string type in types)
         {
             string className = type.Split(':')[0].Trim();
             string paramList = type.Split(':')[1].Trim();
             DefineType(writer, baseName, className, paramList);
         }
+
+        // done
         writer.Write(@"
 }
 ");
@@ -61,33 +77,71 @@ internal abstract class {baseName}
 
         // nested class
         writer.Write($@"
+    
     internal class {className} : {baseName}
     {{");
+        
         // properties
         foreach (string attr in attrs)
         {
             string type = attr.Split(' ')[0];
             string name = attr.Split(' ')[1];
             writer.Write($@"
-        internal {type} {GetPropName(name)} {{ get; }}");
+        public {type} {GetPropertyName(name)} {{ get; }}");
         }
+        
         // constructor
         writer.Write($@"
-        internal {className}({paramList})
+        
+        public {className}({paramList})
         {{");
         foreach (string attr in attrs)
         {
             string name = attr.Split(' ')[1];
             writer.Write($@"
-            {GetPropName(name)} = {name};");
+            {GetPropertyName(name)} = {name};");
         }
         writer.Write(@"
-        }
+        }");
+
+        // implementations
+        writer.Write($@"
+
+        public override R Accept<R>(Visitor<R> visitor)
+        {{
+            return visitor.Visit{className}{baseName}(this);
+        }}");
+
+        // done
+        writer.Write(@"
     }");
     }
 
+    private static void DefineVisitor(StreamWriter writer, string baseName, List<string> types)
+    {
+        // nested interface
+        writer.Write(@"
+    
+    internal interface Visitor<R>
+    {");
+
+        // methods
+        foreach (string type in types)
+        {
+            string className = type.Split(':')[0].Trim();
+            writer.Write($@"
+        R Visit{className}{baseName}({className} {baseName.ToLower()});
+            ");
+        }
+
+        // done
+        writer.Write(@"
+    }");
+    }
+    #endregion
+
     #region String helpers
-    private static string GetPropName(string source)
+    private static string GetPropertyName(string source)
     {
         if (source.StartsWith(conditionalPrefix))
         {
