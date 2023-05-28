@@ -1,83 +1,85 @@
 namespace cslox.lox.scanner;
 
-/// <summary>
-/// Tokenizes a piece of text.
-/// </summary>
 internal class Scanner
 {
-    #region Properties
+    #region Fields/Properties
     /// <summary>
     /// Source text to scan.
     /// </summary>
-    private string source { get; }
+    private readonly string _source;
     /// <summary>
-    /// Tokens derived from source.
+    /// Tokens derived from the source text.
     /// </summary>
-    private List<Token> tokens { get; } = new();
+    private readonly List<Token> _tokens = new();
     /// <summary>
-    /// Start index of the token under consideration.
+    /// Index of the character that starts the token under consideration.
     /// </summary>
-    private int start { get; set; } = 0;
+    private int _start = 0;
     /// <summary>
-    /// Current index in source.
+    /// Index of the character under consideration.
     /// </summary>
-    private int current { get; set; } = 0;
+    private int _current = 0;
     /// <summary>
-    /// Line number in source.
+    /// Line number under consideration.
     /// </summary>
-    private int line { get; set; } = 1;
-    /// <summary>
-    /// Whether the source has no more characters for us to scan.
-    /// </summary>
-    private bool isAtEnd => (current >= source.Length);
+    private int _line = 1;
     /// <summary>
     /// Length of the token under consideration.
     /// </summary>
-    private int currentLength => (current - start);
+    private int CurrentLength => (_current - _start);
     /// <summary>
-    /// Map from keyword literals to their token types.
+    /// Whether the scanner has reached the end of the source text.
     /// </summary>
-    private static readonly Dictionary<string, TokenType> keywords = new()
+    private bool IsAtEnd => (_current >= _source.Length);
+    /// <summary>
+    /// Maps keyword literals to their token types.
+    /// </summary>
+    private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
-        ["and"] = TokenType.AND,
-        ["class"] = TokenType.CLASS,
-        ["else"] = TokenType.ELSE,
-        ["false"] = TokenType.FALSE,
-        ["for"] = TokenType.FOR,
-        ["fun"] = TokenType.FUN,
-        ["if"] = TokenType.IF,
-        ["nil"] = TokenType.NIL,
-        ["or"] = TokenType.OR,
-        ["print"] = TokenType.PRINT,
+        ["and"]    = TokenType.AND,
+        ["class"]  = TokenType.CLASS,
+        ["else"]   = TokenType.ELSE,
+        ["false"]  = TokenType.FALSE,
+        ["for"]    = TokenType.FOR,
+        ["fun"]    = TokenType.FUN,
+        ["if"]     = TokenType.IF,
+        ["nil"]    = TokenType.NIL,
+        ["or"]     = TokenType.OR,
+        ["print"]  = TokenType.PRINT,
         ["return"] = TokenType.RETURN,
-        ["super"] = TokenType.SUPER,
-        ["this"] = TokenType.THIS,
-        ["true"] = TokenType.TRUE,
-        ["var"] = TokenType.VAR,
-        ["while"] = TokenType.WHILE
+        ["super"]  = TokenType.SUPER,
+        ["this"]   = TokenType.THIS,
+        ["true"]   = TokenType.TRUE,
+        ["var"]    = TokenType.VAR,
+        ["while"]  = TokenType.WHILE
     };
     #endregion
 
     #region Constructors
+    /// <summary>
+    /// Creates a new Scanner.
+    /// </summary>
+    /// <param name="source">Source text.</param>
     public Scanner(string source)
     {
-        this.source = source;
+        this._source = source;
     }
     #endregion
 
     #region API
     /// <summary>
-    /// Builds a tokens list from the source text.
+    /// Builds a list of tokens from the source text.
     /// </summary>
+    /// <returns>A list of tokens.</returns>
     public List<Token> ScanTokens()
     {
-        while (!isAtEnd)
+        while (!IsAtEnd)
         {
-            start = current;
+            _start = _current;
             ScanToken();
         }
-        tokens.Add(new Token(TokenType.EOF, string.Empty, null, line));
-        return tokens;
+        _tokens.Add(new Token(TokenType.EOF, string.Empty, null, _line));
+        return _tokens;
     }
     #endregion
 
@@ -144,7 +146,7 @@ internal class Scanner
                 break;
             // track new lines
             case '\n':
-                line++;
+                _line++;
                 break;
             // literal string
             case '"':
@@ -164,64 +166,71 @@ internal class Scanner
                 }
                 else
                 {
-                    Lox.Error(line, "Unexpected character.");
+                    Lox.Error(_line, "Unexpected character.");
                 }
                 break;
         }
     }
     #endregion
 
-    #region Text helpers
+    #region Source text access
     /// <summary>
-    /// Increments our index in the source by one.
+    /// Advances to the next character.
     /// </summary>
+    /// <returns>The current character.</returns>
     private char Advance()
     {
-        return source[current++];
+        return _source[_current++];
     }
 
     /// <summary>
-    /// Checks if the current char matches an expected char; advances if so.
+    /// Checks if the current and expected characters match. If so, advances.
     /// </summary>
+    /// <param name="expected">The expected character.</param>
+    /// <returns>Whether the current and expected characters match.</returns>
     private bool Match(char expected)
     {
-        if (isAtEnd || source[current] != expected)
+        if (IsAtEnd || _source[_current] != expected)
         {
             return false;
         }
-        current++;
+        _current++;
         return true;
     }
 
     /// <summary>
-    /// Gets the next char, if it exists.
+    /// Gets the current character, without advancing.
     /// </summary>
+    /// <returns>The current character.</returns>
     private char Peek()
     {
-        if (isAtEnd)
+        if (IsAtEnd)
         {
             return '\0';
         }
-        return source[current];
+        return _source[_current];
     }
 
     /// <summary>
-    /// Gets the next-next char, if it exists.
+    /// Gets the next character, without advancing.
     /// </summary>
+    /// <returns>The next character.</returns>
     private char PeekNext()
     {
-        if (current + 1 >= source.Length)
+        if (_current + 1 >= _source.Length)
         {
             return '\0';
         }
-        return source[current + 1];
+        return _source[_current + 1];
     }
     #endregion
 
-    #region Static char-acterizers
+    #region Char-acterizers
     /// <summary>
-    /// Decides whether a char is a digit. Supported: [0-9].
+    /// Decides whether a character is a digit. Supported: [0-9].
     /// </summary>
+    /// <param name="c">The character to check</param>
+    /// <returns>Whether the given character is a digit.</returns>
     private static bool IsDigit(char c)
     {
         // char.IsDigit gets fancy with Unicode, so we roll our own
@@ -229,23 +238,27 @@ internal class Scanner
     }
 
     /// <summary>
-    /// Decides whether a char is alphabetical. Supported: [a-z,A-Z,_].
+    /// Decides whether a character is alphabetical. Supported: [a-z,A-Z,_].
     /// </summary>
+    /// <param name="c">The character to check.</param>
+    /// <returns>Whether the given character is alphabetical.</returns>
     private static bool IsAlpha(char c)
     {
         return char.IsAsciiLetter(c) || c == '_';
     }
 
     /// <summary>
-    /// Decides whether a char is alphanumeric.
+    /// Decides whether a character is alphanumeric.
     /// </summary>
+    /// <param name="c">The character to check.</param>
+    /// <returns>Whether the given character is alphanumeric.</returns>
     private static bool IsAlphaNumeric(char c)
     {
         return IsAlpha(c) || IsDigit(c);
     }
     #endregion
 
-    #region Type-specific tokenizers
+    #region Multi-character tokenizers
     /// <summary>
     /// Tokenizes a thing that starts with a slash (comment or slash).
     /// </summary>
@@ -255,7 +268,7 @@ internal class Scanner
         if (Match('/'))
         {
             // by throwing them out
-            while (Peek() != '\n' && !isAtEnd)
+            while (Peek() != '\n' && !IsAtEnd)
             {
                 Advance();
             }
@@ -272,20 +285,20 @@ internal class Scanner
     private void String()
     {
         // walk the string to its end
-        while (Peek() != '"' && !isAtEnd)
+        while (Peek() != '"' && !IsAtEnd)
         {
             // multiline strings are fine
             if (Peek() == '\n')
             {
-                line++;
+                _line++;
             }
             Advance();
         }
 
         // if we ran out of road, that's a problem
-        if (isAtEnd)
+        if (IsAtEnd)
         {
-            Lox.Error(line, "Unterminated string.");
+            Lox.Error(_line, "Unterminated string.");
             return;
         }
 
@@ -293,7 +306,7 @@ internal class Scanner
         Advance();
 
         // trim surrounding quotes
-        string value = source.Substring(start + 1, currentLength - 2);
+        string value = _source.Substring(_start + 1, CurrentLength - 2);
         // tokenize
         AddToken(TokenType.STRING, value);
     }
@@ -322,7 +335,7 @@ internal class Scanner
         }
 
         // parse the number
-        double value = Double.Parse(source.Substring(start, currentLength));
+        double value = Double.Parse(_source.Substring(_start, CurrentLength));
         // tokenize
         AddToken(TokenType.NUMBER, value);
     }
@@ -339,10 +352,10 @@ internal class Scanner
         }
 
         // grab the lexeme
-        string text = source.Substring(start, currentLength);
+        string text = _source.Substring(_start, CurrentLength);
 
         // maybe it's a keyword we support
-        if (!keywords.TryGetValue(text, out TokenType type))
+        if (!s_keywordMap.TryGetValue(text, out TokenType type))
         {
             // otherwise it's an identifier
             type = TokenType.IDENTIFIER;
@@ -355,7 +368,7 @@ internal class Scanner
 
     #region Token factories
     /// <summary>
-    /// Adds token to list; call when token has no literal component.
+    /// Adds token to list. Call this when token has no literal component.
     /// </summary>
     private void AddToken(TokenType type)
     {
@@ -367,8 +380,8 @@ internal class Scanner
     /// </summary>
     private void AddToken(TokenType type, object? literal)
     {
-        string text = source.Substring(start, currentLength);
-        tokens.Add(new Token(type, text, literal, line));
+        string text = _source.Substring(_start, CurrentLength);
+        _tokens.Add(new Token(type, text, literal, _line));
     }
     #endregion
 }

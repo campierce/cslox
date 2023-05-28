@@ -1,6 +1,6 @@
 namespace cslox.lox.scanner;
 
-enum TokenType
+internal enum TokenType
 {
     // one-char tokens
     LEFT_PAREN,
