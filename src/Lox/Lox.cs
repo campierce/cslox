@@ -1,5 +1,8 @@
 using System.Text;
+using cslox.lox.ir;
 using cslox.lox.scanner;
+using lox.cslox.parser;
+using static cslox.lox.scanner.TokenType;
 
 namespace cslox.lox;
 
@@ -57,11 +60,22 @@ public class Lox
         Scanner scanner = new(source);
         List<Token> tokens = scanner.ScanTokens();
 
-        // for now, just print
-        foreach (Token token in tokens)
+        Parser parser = new Parser(tokens);
+        Expr? expression = parser.Parse();
+
+        if (hadError)
         {
-            Console.WriteLine(token);
+            return;
         }
+
+        // safe to null-forgive here b/c there was no error
+        Console.WriteLine(new AstPrinter().Print(expression!));
+    }
+
+    private static void Report(int line, string where, string message)
+    {
+        Console.WriteLine($"[line {line}] Error{where}: {message}");
+        hadError = true;
     }
 
     internal static void Error(int line, string message)
@@ -69,9 +83,15 @@ public class Lox
         Report(line, string.Empty, message);
     }
 
-    private static void Report(int line, string where, string message)
+    internal static void Error(Token token, string message)
     {
-        Console.WriteLine($"[line {line}] Error{where}: {message}");
-        hadError = true;
+        if (token.Type == EOF)
+        {
+            Report(token.Line, " at end", message);
+        }
+        else
+        {
+            Report(token.Line, " at '" + token.Lexeme + "'", message);
+        }
     }
 }

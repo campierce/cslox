@@ -1,4 +1,5 @@
 namespace cslox.lox.scanner;
+using static cslox.lox.scanner.TokenType;
 
 internal class Scanner
 {
@@ -36,22 +37,22 @@ internal class Scanner
     /// </summary>
     private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
-        ["and"]    = TokenType.AND,
-        ["class"]  = TokenType.CLASS,
-        ["else"]   = TokenType.ELSE,
-        ["false"]  = TokenType.FALSE,
-        ["for"]    = TokenType.FOR,
-        ["fun"]    = TokenType.FUN,
-        ["if"]     = TokenType.IF,
-        ["nil"]    = TokenType.NIL,
-        ["or"]     = TokenType.OR,
-        ["print"]  = TokenType.PRINT,
-        ["return"] = TokenType.RETURN,
-        ["super"]  = TokenType.SUPER,
-        ["this"]   = TokenType.THIS,
-        ["true"]   = TokenType.TRUE,
-        ["var"]    = TokenType.VAR,
-        ["while"]  = TokenType.WHILE
+        ["and"]    = AND,
+        ["class"]  = CLASS,
+        ["else"]   = ELSE,
+        ["false"]  = FALSE,
+        ["for"]    = FOR,
+        ["fun"]    = FUN,
+        ["if"]     = IF,
+        ["nil"]    = NIL,
+        ["or"]     = OR,
+        ["print"]  = PRINT,
+        ["return"] = RETURN,
+        ["super"]  = SUPER,
+        ["this"]   = THIS,
+        ["true"]   = TRUE,
+        ["var"]    = VAR,
+        ["while"]  = WHILE
     };
     #endregion
 
@@ -78,12 +79,84 @@ internal class Scanner
             _start = _current;
             ScanToken();
         }
-        _tokens.Add(new Token(TokenType.EOF, string.Empty, null, _line));
+        _tokens.Add(new Token(EOF, string.Empty, null, _line));
         return _tokens;
     }
     #endregion
 
-    #region Core logic
+    #region Source text access
+    /// <summary>
+    /// Gets the current character, and advances to the next.
+    /// </summary>
+    /// <returns>The current character.</returns>
+    private char Advance()
+    {
+        return _source[_current++];
+    }
+
+    /// <summary>
+    /// Gets the current character, without advancing.
+    /// </summary>
+    /// <returns>The current character.</returns>
+    private char Peek()
+    {
+        if (IsAtEnd)
+        {
+            return '\0';
+        }
+        return _source[_current];
+    }
+
+    /// <summary>
+    /// Gets the next character, without advancing.
+    /// </summary>
+    /// <returns>The next character.</returns>
+    private char PeekNext()
+    {
+        int next = _current + 1;
+        if (next >= _source.Length)
+        {
+            return '\0';
+        }
+        return _source[next];
+    }
+
+    /// <summary>
+    /// Checks if the current and expected characters match. If so, advances.
+    /// </summary>
+    /// <param name="expected">The expected character.</param>
+    /// <returns>Whether the current and expected characters match.</returns>
+    private bool Match(char expected)
+    {
+        if (IsAtEnd || Peek() != expected)
+        {
+            return false;
+        }
+        _current++;
+        return true;
+    }
+    #endregion
+
+    #region Token list access
+    /// <summary>
+    /// Adds a token with a null literal to the list.
+    /// </summary>
+    private void AddToken(TokenType type)
+    {
+        AddToken(type, null);
+    }
+
+    /// <summary>
+    /// Adds a token to the list.
+    /// </summary>
+    private void AddToken(TokenType type, object? literal)
+    {
+        string text = _source.Substring(_start, CurrentLength);
+        _tokens.Add(new Token(type, text, literal, _line));
+    }
+    #endregion
+
+    #region Token creation
     /// <summary>
     /// Creates the next token. (Where the magic happens.)
     /// </summary>
@@ -94,50 +167,50 @@ internal class Scanner
         {
             // one-char tokens
             case '(':
-                AddToken(TokenType.LEFT_PAREN);
+                AddToken(LEFT_PAREN);
                 break;
             case ')':
-                AddToken(TokenType.RIGHT_PAREN);
+                AddToken(RIGHT_PAREN);
                 break;
             case '{':
-                AddToken(TokenType.LEFT_BRACE);
+                AddToken(LEFT_BRACE);
                 break;
             case '}':
-                AddToken(TokenType.RIGHT_BRACE);
+                AddToken(RIGHT_BRACE);
                 break;
             case ',':
-                AddToken(TokenType.COMMA);
+                AddToken(COMMA);
                 break;
             case '.':
-                AddToken(TokenType.DOT);
+                AddToken(DOT);
                 break;
             case '-':
-                AddToken(TokenType.MINUS);
+                AddToken(MINUS);
                 break;
             case '+':
-                AddToken(TokenType.PLUS);
+                AddToken(PLUS);
                 break;
             case ';':
-                AddToken(TokenType.SEMICOLON);
+                AddToken(SEMICOLON);
                 break;
             case '*':
-                AddToken(TokenType.STAR);
+                AddToken(STAR);
                 break;
             case '/':
                 Slash();
                 break;
             // one- or two-char tokens
             case '!':
-                AddToken(Match('=') ? TokenType.BANG_EQUAL : TokenType.BANG);
+                AddToken(Match('=') ? BANG_EQUAL : BANG);
                 break;
             case '=':
-                AddToken(Match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
+                AddToken(Match('=') ? EQUAL_EQUAL : EQUAL);
                 break;
             case '<':
-                AddToken(Match('=') ? TokenType.LESS_EQUAL : TokenType.LESS);
+                AddToken(Match('=') ? LESS_EQUAL : LESS);
                 break;
             case '>':
-                AddToken(Match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
+                AddToken(Match('=') ? GREATER_EQUAL : GREATER);
                 break;
             // ignore whitespace
             case ' ':
@@ -171,57 +244,111 @@ internal class Scanner
                 break;
         }
     }
-    #endregion
-
-    #region Source text access
-    /// <summary>
-    /// Advances to the next character.
-    /// </summary>
-    /// <returns>The current character.</returns>
-    private char Advance()
-    {
-        return _source[_current++];
-    }
 
     /// <summary>
-    /// Checks if the current and expected characters match. If so, advances.
+    /// Tokenizes a thing that starts with a slash (comment or slash).
     /// </summary>
-    /// <param name="expected">The expected character.</param>
-    /// <returns>Whether the current and expected characters match.</returns>
-    private bool Match(char expected)
+    private void Slash()
     {
-        if (IsAtEnd || _source[_current] != expected)
+        // handle comments
+        if (Match('/'))
         {
-            return false;
+            // by throwing them out
+            while (Peek() != '\n' && !IsAtEnd)
+            {
+                Advance();
+            }
+            return;
         }
-        _current++;
-        return true;
+
+        // else it's an actual slash
+        AddToken(SLASH);
     }
 
     /// <summary>
-    /// Gets the current character, without advancing.
+    /// Tokenizes a string.
     /// </summary>
-    /// <returns>The current character.</returns>
-    private char Peek()
+    private void String()
     {
+        // walk the string to its end
+        while (Peek() != '"' && !IsAtEnd)
+        {
+            // multiline strings are fine
+            if (Peek() == '\n')
+            {
+                _line++;
+            }
+            Advance();
+        }
+
+        // if we ran out of road, that's a problem
         if (IsAtEnd)
         {
-            return '\0';
+            Lox.Error(_line, "Unterminated string.");
+            return;
         }
-        return _source[_current];
+
+        // consume the closing "
+        Advance();
+
+        // trim surrounding quotes
+        string value = _source.Substring(_start + 1, CurrentLength - 2);
+        // tokenize
+        AddToken(STRING, value);
     }
 
     /// <summary>
-    /// Gets the next character, without advancing.
+    /// Tokenizes a number.
     /// </summary>
-    /// <returns>The next character.</returns>
-    private char PeekNext()
+    private void Number()
     {
-        if (_current + 1 >= _source.Length)
+        // walk the integer part
+        while (IsDigit(Peek()))
         {
-            return '\0';
+            Advance();
         }
-        return _source[_current + 1];
+
+        // look for a fractional part
+        if (Peek() == '.' && IsDigit(PeekNext()))
+        {
+            // consume the .
+            Advance();
+            // walk the rest
+            while (IsDigit(Peek()))
+            {
+                Advance();
+            }
+        }
+
+        // parse the number
+        double value = Double.Parse(_source.Substring(_start, CurrentLength));
+        // tokenize
+        AddToken(NUMBER, value);
+    }
+
+    /// <summary>
+    /// Tokenizes an identifier.
+    /// </summary>
+    private void Identifier()
+    {
+        // walk to the end
+        while (IsAlphaNumeric(Peek()))
+        {
+            Advance();
+        }
+
+        // grab the lexeme
+        string text = _source.Substring(_start, CurrentLength);
+
+        // maybe it's a keyword we support
+        if (!s_keywordMap.TryGetValue(text, out TokenType type))
+        {
+            // otherwise it's an identifier
+            type = IDENTIFIER;
+        }
+
+        // tokenize
+        AddToken(type);
     }
     #endregion
 
@@ -255,133 +382,6 @@ internal class Scanner
     private static bool IsAlphaNumeric(char c)
     {
         return IsAlpha(c) || IsDigit(c);
-    }
-    #endregion
-
-    #region Multi-character tokenizers
-    /// <summary>
-    /// Tokenizes a thing that starts with a slash (comment or slash).
-    /// </summary>
-    private void Slash()
-    {
-        // handle comments
-        if (Match('/'))
-        {
-            // by throwing them out
-            while (Peek() != '\n' && !IsAtEnd)
-            {
-                Advance();
-            }
-            return;
-        }
-
-        // else it's an actual slash
-        AddToken(TokenType.SLASH);
-    }
-
-    /// <summary>
-    /// Tokenizes a string.
-    /// </summary>
-    private void String()
-    {
-        // walk the string to its end
-        while (Peek() != '"' && !IsAtEnd)
-        {
-            // multiline strings are fine
-            if (Peek() == '\n')
-            {
-                _line++;
-            }
-            Advance();
-        }
-
-        // if we ran out of road, that's a problem
-        if (IsAtEnd)
-        {
-            Lox.Error(_line, "Unterminated string.");
-            return;
-        }
-
-        // consume the closing "
-        Advance();
-
-        // trim surrounding quotes
-        string value = _source.Substring(_start + 1, CurrentLength - 2);
-        // tokenize
-        AddToken(TokenType.STRING, value);
-    }
-
-    /// <summary>
-    /// Tokenizes a number.
-    /// </summary>
-    private void Number()
-    {
-        // walk the integer part
-        while (IsDigit(Peek()))
-        {
-            Advance();
-        }
-
-        // look for a fractional part
-        if (Peek() == '.' && IsDigit(PeekNext()))
-        {
-            // consume the .
-            Advance();
-            // walk the rest
-            while (IsDigit(Peek()))
-            {
-                Advance();
-            }
-        }
-
-        // parse the number
-        double value = Double.Parse(_source.Substring(_start, CurrentLength));
-        // tokenize
-        AddToken(TokenType.NUMBER, value);
-    }
-
-    /// <summary>
-    /// Tokenizes an identifier.
-    /// </summary>
-    private void Identifier()
-    {
-        // walk to the end
-        while (IsAlphaNumeric(Peek()))
-        {
-            Advance();
-        }
-
-        // grab the lexeme
-        string text = _source.Substring(_start, CurrentLength);
-
-        // maybe it's a keyword we support
-        if (!s_keywordMap.TryGetValue(text, out TokenType type))
-        {
-            // otherwise it's an identifier
-            type = TokenType.IDENTIFIER;
-        }
-
-        // tokenize
-        AddToken(type);
-    }
-    #endregion
-
-    #region Token factories
-    /// <summary>
-    /// Adds token to list. Call this when token has no literal component.
-    /// </summary>
-    private void AddToken(TokenType type)
-    {
-        AddToken(type, null);
-    }
-
-    /// <summary>
-    /// Adds token to list.
-    /// </summary>
-    private void AddToken(TokenType type, object? literal)
-    {
-        string text = _source.Substring(_start, CurrentLength);
-        _tokens.Add(new Token(type, text, literal, _line));
     }
     #endregion
 }
