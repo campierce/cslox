@@ -54,9 +54,9 @@ internal abstract class Expr
     
     internal class Literal : Expr
     {
-        public Object? Value { get; }
+        public Object Value { get; }
         
-        public Literal(Object? value)
+        public Literal(Object value)
         {
             Value = value;
         }

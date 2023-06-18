@@ -1,5 +1,6 @@
-namespace cslox.lox.scanner;
 using static cslox.lox.scanner.TokenType;
+
+namespace cslox.lox.scanner;
 
 internal class Scanner
 {
@@ -79,7 +80,7 @@ internal class Scanner
             _start = _current;
             ScanToken();
         }
-        _tokens.Add(new Token(EOF, string.Empty, null, _line));
+        _tokens.Add(new Token(EOF, string.Empty, Nil.Instance, _line));
         return _tokens;
     }
     #endregion
@@ -139,17 +140,17 @@ internal class Scanner
 
     #region Token list access
     /// <summary>
-    /// Adds a token with a null literal to the list.
+    /// Adds a token with a null-like literal to the list.
     /// </summary>
     private void AddToken(TokenType type)
     {
-        AddToken(type, null);
+        AddToken(type, Nil.Instance);
     }
 
     /// <summary>
     /// Adds a token to the list.
     /// </summary>
-    private void AddToken(TokenType type, object? literal)
+    private void AddToken(TokenType type, object literal)
     {
         string text = _source.Substring(_start, CurrentLength);
         _tokens.Add(new Token(type, text, literal, _line));

@@ -26,7 +26,7 @@ public class AstGenerator
             new List<string> {
                 $"Binary   : Expr left, Token {conditionalPrefix}operator, Expr right",
                 "Grouping : Expr expression",
-                "Literal  : Object? value",
+                "Literal  : Object value",
                 $"Unary    : Token {conditionalPrefix}operator, Expr right"
             }
         );
