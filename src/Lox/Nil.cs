@@ -9,12 +9,6 @@ namespace cslox.lox;
 /// </summary>
 internal class Nil
 {
-    // if we use C#'s `null` to represent Lox's `nil`
-    // then _any_ literal's value must be an `object?`
-    // that's fine, but it doesn't read well
-    // so this class exists to "shield" the null
-    // until we need to print/interpret it
-
     public static Nil Instance { get; } = new Nil();
 
     private Nil()

@@ -11,6 +11,7 @@ public class AstGenerator
     /// </summary>
     private const char conditionalPrefix = '_';
 
+    // {dir_with_assembly} > ./generate_ast ~/code/cslox/src/Lox/IR
     public static void Main(string[] args)
     {
         if (args.Length != 1)
