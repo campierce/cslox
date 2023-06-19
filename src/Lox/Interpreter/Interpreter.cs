@@ -113,7 +113,7 @@ internal class Interpreter : Expr.Visitor<object>
         // everything else is truthy
         if (obj is Nil) return false;
         if (obj is bool b) return b;
-        return false;
+        return true;
     }
 
     private bool IsEqual(object a, object b)
