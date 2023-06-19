@@ -37,7 +37,7 @@ internal class AstPrinter : Expr.Visitor<string>
     #region Helpers
     private string Parenthesize(string name, params Expr[] exprs)
     {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new();
 
         builder.Append($"({name}");
         foreach (Expr expr in exprs)

@@ -9,7 +9,7 @@ namespace cslox.lox;
 /// </summary>
 internal class Nil
 {
-    public static Nil Instance { get; } = new Nil();
+    public static Nil Instance { get; } = new();
 
     private Nil()
     {

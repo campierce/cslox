@@ -1,4 +1,5 @@
 using System.Text;
+using cslox.lox.interpreter;
 using cslox.lox.ir;
 using cslox.lox.scanner;
 using lox.cslox.parser;
@@ -8,13 +9,15 @@ namespace cslox.lox;
 
 public class Lox
 {
-    private static bool hadError = false;
+    private static readonly Interpreter interpreter = new();
+    private static bool _hadError = false;
+    private static bool _hadRuntimeError = false;
 
     public static void Main(string[] args)
     {
         if (args.Length > 1)
         {
-            Console.WriteLine("Usage: cslox [script]");
+            Console.Error.WriteLine("Usage: cslox [script]");
             Environment.Exit(64);
         }
         else if (args.Length == 1)
@@ -32,10 +35,8 @@ public class Lox
         byte[] bytes = File.ReadAllBytes(path);
         Run(Encoding.Default.GetString(bytes));
 
-        if (hadError)
-        {
-            Environment.Exit(64);
-        }
+        if (_hadError) Environment.Exit(64);
+        if (_hadRuntimeError) Environment.Exit(70);
     }
 
     private static void RunPrompt()
@@ -51,7 +52,7 @@ public class Lox
                 break;
             }
             Run(line);
-            hadError = false;
+            _hadError = false;
         }
     }
 
@@ -60,22 +61,20 @@ public class Lox
         Scanner scanner = new(source);
         List<Token> tokens = scanner.ScanTokens();
 
-        Parser parser = new Parser(tokens);
+        Parser parser = new(tokens);
         Expr? expression = parser.Parse();
 
-        if (hadError)
-        {
-            return;
-        }
+        if (_hadError) return;
 
         // safe to null-forgive here b/c there was no error
-        Console.WriteLine(new AstPrinter().Print(expression!));
+        interpreter.Interpret(expression!);
+        // Console.WriteLine(new AstPrinter().Print(expression!));
     }
 
     private static void Report(int line, string where, string message)
     {
-        Console.WriteLine($"[line {line}] Error{where}: {message}");
-        hadError = true;
+        Console.Error.WriteLine($"[line {line}] Error{where}: {message}");
+        _hadError = true;
     }
 
     internal static void Error(int line, string message)
@@ -93,5 +92,11 @@ public class Lox
         {
             Report(token.Line, " at '" + token.Lexeme + "'", message);
         }
+    }
+
+    internal static void RuntimeError(RuntimeError error)
+    {
+        Console.Error.WriteLine($"{error.Message}\n[line {error.Token.Line}]");
+        _hadRuntimeError = true;
     }
 }

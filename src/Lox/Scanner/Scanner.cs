@@ -322,7 +322,7 @@ internal class Scanner
         }
 
         // parse the number
-        double value = Double.Parse(_source.Substring(_start, CurrentLength));
+        double value = double.Parse(_source.Substring(_start, CurrentLength));
         // tokenize
         AddToken(NUMBER, value);
     }

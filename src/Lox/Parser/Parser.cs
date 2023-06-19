@@ -1,5 +1,6 @@
 using cslox.lox;
 using cslox.lox.ir;
+using cslox.lox.parser;
 using cslox.lox.scanner;
 using static cslox.lox.scanner.TokenType;
 
@@ -7,12 +8,6 @@ namespace lox.cslox.parser;
 
 internal class Parser
 {
-    #region Exceptions
-    private class ParseError : Exception
-    {
-    }
-    #endregion
-
     #region Fields/Properties
     private readonly List<Token> _tokens;
 

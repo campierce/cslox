@@ -16,7 +16,7 @@ public class AstGenerator
     {
         if (args.Length != 1)
         {
-            Console.WriteLine("Usage: generate_ast <output directory>");
+            Console.Error.WriteLine("Usage: generate_ast <output directory>");
             Environment.Exit(64);
         }
         string outputDir = args[0];
