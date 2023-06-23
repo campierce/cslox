@@ -12,7 +12,7 @@ internal class AstPrinter : Expr.Visitor<string>
     }
     #endregion
 
-    #region Implementations
+    #region Visitor
     public string VisitBinaryExpr(Expr.Binary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);

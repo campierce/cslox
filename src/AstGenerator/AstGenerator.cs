@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace cslox.tool;
 
 public class AstGenerator
@@ -9,7 +7,7 @@ public class AstGenerator
     /// the derived property name (allows you, e.g., to create an
     /// "Operator" prop despite "operator" being reserved.)
     /// </summary>
-    private const char conditionalPrefix = '_';
+    private const char escapePrefix = '@';
 
     // {dir_with_assembly} > ./generate_ast ~/code/cslox/src/Lox/IR
     public static void Main(string[] args)
@@ -23,12 +21,12 @@ public class AstGenerator
         DefineAst(
             outputDir,
             "Expr",
-            // "operator" is a keyword, so prefix it
+            // "operator" is a keyword, so escape it
             new List<string> {
-                $"Binary   : Expr left, Token {conditionalPrefix}operator, Expr right",
+                $"Binary   : Expr left, Token {escapePrefix}operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Object value",
-                $"Unary    : Token {conditionalPrefix}operator, Expr right"
+                $"Unary    : Token {escapePrefix}operator, Expr right"
             }
         );
     }
@@ -37,114 +35,115 @@ public class AstGenerator
     private static void DefineAst(string outputDir, string baseName, List<string> types)
     {
         string path = Path.Combine(outputDir, baseName + ".cs");
-        using StreamWriter writer = new(path, false, Encoding.UTF8);
-        
-        // top of file
-        writer.Write($@"using cslox.lox.scanner;
+        IndentableStringBuilder sb = new();
 
-namespace cslox.lox.ir;");
+        // top of file
+        sb.AppendLine("using cslox.lox.scanner;");
+        sb.AppendLine();
+        sb.AppendLine("namespace cslox.lox.ir;");
+        sb.AppendLine();
 
         // abc
-        writer.Write($@"
-
-internal abstract class {baseName}
-{{");
+        sb.AppendLine($"internal abstract class {baseName}");
+        sb.AppendLine("{");
+        sb.Indent();
 
         // abstract methods
-        writer.Write(@"
-    public abstract R Accept<R>(Visitor<R> visitor);");
+        sb.AppendLine("public abstract T Accept<T>(Visitor<T> visitor);");
+        sb.AppendLine();
 
         // visitor interface
-        DefineVisitor(writer, baseName, types);
+        DefineVisitor(sb, baseName, types);
+        sb.AppendLine();
 
         // concrete subclasses
         foreach (string type in types)
         {
             string className = type.Split(':')[0].Trim();
             string paramList = type.Split(':')[1].Trim();
-            DefineType(writer, baseName, className, paramList);
+            DefineType(sb, baseName, className, paramList);
         }
+        sb.RetractLastLine(); // remove the last newline
 
         // done
-        writer.Write(@"
-}
-");
+        sb.Outdent();
+        sb.AppendLine("}");
+        File.WriteAllText(path, sb.ToString());
     }
 
     private static void DefineType(
-        StreamWriter writer, string baseName, string className, string paramList)
+        IndentableStringBuilder sb, string baseName, string className, string paramList)
     {
         string[] attrs = paramList.Split(", ");
 
         // nested class
-        writer.Write($@"
-    
-    internal class {className} : {baseName}
-    {{");
-        
+        sb.AppendLine($"internal class {className} : {baseName}");
+        sb.AppendLine("{");
+        sb.Indent();
+
         // properties
         foreach (string attr in attrs)
         {
             string type = attr.Split(' ')[0];
             string name = attr.Split(' ')[1];
-            writer.Write($@"
-        public {type} {GetPropertyName(name)} {{ get; }}");
+            sb.AppendLine($"public {type} {GetPropertyName(name)} {{ get; }}");
         }
-        
+        sb.AppendLine();
+
         // constructor
-        writer.Write($@"
-        
-        public {className}({paramList})
-        {{");
+        sb.AppendLine($"public {className}({paramList})");
+        sb.AppendLine("{");
+        sb.Indent();
         foreach (string attr in attrs)
         {
             string name = attr.Split(' ')[1];
-            writer.Write($@"
-            {GetPropertyName(name)} = {name};");
-        }
-        writer.Write(@"
-        }");
+            sb.AppendLine($"{GetPropertyName(name)} = {name};");
+        }        
+        sb.Outdent();
+        sb.AppendLine("}");
+        sb.AppendLine();
 
         // implementations
-        writer.Write($@"
-
-        public override R Accept<R>(Visitor<R> visitor)
-        {{
-            return visitor.Visit{className}{baseName}(this);
-        }}");
+        sb.AppendLine("public override T Accept<T>(Visitor<T> visitor)");
+        sb.AppendLine("{");
+        sb.Indent();
+        sb.AppendLine($"return visitor.Visit{className}{baseName}(this);");
+        sb.Outdent();
+        sb.AppendLine("}");
 
         // done
-        writer.Write(@"
-    }");
+        sb.Outdent();
+        sb.AppendLine("}");
+        sb.AppendLine();
     }
 
-    private static void DefineVisitor(StreamWriter writer, string baseName, List<string> types)
+    private static void DefineVisitor(
+        IndentableStringBuilder sb, string baseName, List<string> types)
     {
         // nested interface
-        writer.Write(@"
-    
-    internal interface Visitor<R>
-    {");
+        sb.AppendLine("internal interface Visitor<T>");
+        sb.AppendLine("{");
+        sb.Indent();
 
         // methods
         foreach (string type in types)
         {
             string className = type.Split(':')[0].Trim();
-            writer.Write($@"
-        R Visit{className}{baseName}({className} {baseName.ToLower()});
-            ");
+            sb.AppendLine($"T Visit{className}{baseName}({className} {baseName.ToLower()});");
+            sb.AppendLine();
         }
 
         // done
-        writer.Write(@"
-    }");
+        sb.RetractLastLine(); // remove the last newline
+        sb.Outdent();
+        sb.AppendLine("}");
     }
     #endregion
 
     #region String helpers
     private static string GetPropertyName(string source)
     {
-        if (source.StartsWith(conditionalPrefix))
+        if (source.StartsWith(escapePrefix))
         {
             source = source[1..];
         }

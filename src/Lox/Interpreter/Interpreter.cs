@@ -21,7 +21,7 @@ internal class Interpreter : Expr.Visitor<object>
   }
     #endregion
 
-    #region Implementations
+    #region Visitor
     public object VisitBinaryExpr(Expr.Binary expr)
     {
         object left = Evaluate(expr.Left);

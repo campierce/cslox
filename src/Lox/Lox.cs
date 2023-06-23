@@ -35,8 +35,8 @@ public class Lox
         byte[] bytes = File.ReadAllBytes(path);
         Run(Encoding.Default.GetString(bytes));
 
-        if (_hadError) Environment.Exit(64);
-        if (_hadRuntimeError) Environment.Exit(70);
+        if (_hadError) { Environment.Exit(64); } // EX_USAGE
+        if (_hadRuntimeError) { Environment.Exit(70); } // EX_SOFTWARE
     }
 
     private static void RunPrompt()
@@ -47,7 +47,7 @@ public class Lox
         {
             Console.Write("> ");
             string? line = reader.ReadLine();
-            if (line == null)
+            if (line == null) // ctrl + d = end of input
             {
                 break;
             }
@@ -64,9 +64,8 @@ public class Lox
         Parser parser = new(tokens);
         Expr? expression = parser.Parse();
 
-        if (_hadError) return;
+        if (_hadError) { return; }
 
-        // safe to null-forgive here b/c there was no error
         interpreter.Interpret(expression!);
         // Console.WriteLine(new AstPrinter().Print(expression!));
     }
