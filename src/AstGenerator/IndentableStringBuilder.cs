@@ -1,3 +1,5 @@
+namespace Lox.Tools;
+
 using System.Text;
 
 public class IndentableStringBuilder
@@ -6,7 +8,7 @@ public class IndentableStringBuilder
     private readonly int _newlineLength;
     private readonly int _width = 4;
     private int _spaces;
-    
+
     public IndentableStringBuilder()
     {
         _sb = new StringBuilder();

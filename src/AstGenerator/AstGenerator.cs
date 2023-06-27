@@ -1,4 +1,4 @@
-namespace cslox.tool;
+namespace Lox.Tools;
 
 public class AstGenerator
 {
@@ -18,32 +18,52 @@ public class AstGenerator
             Environment.Exit(64);
         }
         string outputDir = args[0];
+
+        // define expression types
         DefineAst(
             outputDir,
             "Expr",
-            // "operator" is a keyword, so escape it
-            new List<string> {
-                $"Binary   : Expr left, Token {escapePrefix}operator, Expr right",
+            new List<string>
+            {
+                $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Object value",
-                $"Unary    : Token {escapePrefix}operator, Expr right"
+                $"Unary   : Token {escapePrefix}operator, Expr right"
             }
         );
+
+        // define statement types
+        /*
+        DefineAst(
+            outputDir,
+            "Stmt",
+            new List<string>
+            {
+                // TODO rename Expression or its Expression property
+                "Expression : Expr expression",
+                "Print      : Expr expression"
+            },
+            false
+        );
+        */
     }
 
-    #region Writer helpers
-    private static void DefineAst(string outputDir, string baseName, List<string> types)
+    #region StringBuilder helpers
+    private static void DefineAst(
+        string outputDir, string baseName, List<string> types, bool usesTokens = true)
     {
-        string path = Path.Combine(outputDir, baseName + ".cs");
         IndentableStringBuilder sb = new();
 
         // top of file
-        sb.AppendLine("using cslox.lox.scanner;");
-        sb.AppendLine();
-        sb.AppendLine("namespace cslox.lox.ir;");
+        if (usesTokens)
+        {
+            sb.AppendLine("using Lox.Scanning;");
+            sb.AppendLine();
+        }
+        sb.AppendLine("namespace Lox.IR;");
         sb.AppendLine();
 
-        // abc
+        // abstract base class
         sb.AppendLine($"internal abstract class {baseName}");
         sb.AppendLine("{");
         sb.Indent();
@@ -68,6 +88,9 @@ public class AstGenerator
         // done
         sb.Outdent();
         sb.AppendLine("}");
+
+        // write it out
+        string path = Path.Combine(outputDir, baseName + ".cs");
         File.WriteAllText(path, sb.ToString());
     }
 
@@ -98,7 +121,7 @@ public class AstGenerator
         {
             string name = attr.Split(' ')[1];
             sb.AppendLine($"{GetPropertyName(name)} = {name};");
-        }        
+        }
         sb.Outdent();
         sb.AppendLine("}");
         sb.AppendLine();
@@ -140,7 +163,7 @@ public class AstGenerator
     }
     #endregion
 
-    #region String helpers
+    #region Static helpers
     private static string GetPropertyName(string source)
     {
         if (source.StartsWith(escapePrefix))

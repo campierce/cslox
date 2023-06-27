@@ -1,6 +1,6 @@
-using cslox.lox.scanner;
+using Lox.Scanning;
 
-namespace cslox.lox.ir;
+namespace Lox.IR;
 
 internal abstract class Expr
 {

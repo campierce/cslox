@@ -1,11 +1,11 @@
 using System.Text;
-using cslox.lox.interpreter;
-using cslox.lox.ir;
-using cslox.lox.scanner;
-using lox.cslox.parser;
-using static cslox.lox.scanner.TokenType;
+using Lox.Interpreting;
+using Lox.IR;
+using Lox.Parsing;
+using Lox.Scanning;
+using static Lox.Scanning.TokenType;
 
-namespace cslox.lox;
+namespace Lox;
 
 public class Lox
 {

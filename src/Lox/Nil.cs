@@ -1,11 +1,11 @@
-namespace cslox.lox;
+namespace Lox;
 
 /// <summary>
 /// Non-null wrapper around null.
-/// If we use C#'s `null` to represent Lox's `nil`, then _any_ literal's value must be
-/// typed as as `object?`. That's fine, but it suggests our literals can be missing a
-/// value, when in fact that absence would represent a valid object. This class exists
-/// to un-blur the lines and "shield" the literal `null` until it's needed.
+/// If we use C#'s `null` to represent Lox's `nil`, then any literal must be
+/// typed as as `object?`. That's fine, but it reads like "literals can be missing"
+/// when really the missing state still has meaning. This class exists to unblur
+/// the lines and "shield" `null` until it's needed.
 /// </summary>
 internal class Nil
 {

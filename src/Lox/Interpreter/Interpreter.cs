@@ -1,8 +1,8 @@
-using cslox.lox.ir;
-using cslox.lox.scanner;
-using static cslox.lox.scanner.TokenType;
+using Lox.IR;
+using Lox.Scanning;
+using static Lox.Scanning.TokenType;
 
-namespace cslox.lox.interpreter;
+namespace Lox.Interpreting;
 
 internal class Interpreter : Expr.Visitor<object>
 {
@@ -18,7 +18,7 @@ internal class Interpreter : Expr.Visitor<object>
         {
             Lox.RuntimeError(error);
         }
-  }
+    }
     #endregion
 
     #region Visitor
@@ -50,7 +50,7 @@ internal class Interpreter : Expr.Visitor<object>
         }
 
         CheckNumberOperands(expr.Operator, left, right);
-        
+
         double a = (double)left;
         double b = (double)right;
         switch (expr.Operator.Type)
@@ -73,17 +73,17 @@ internal class Interpreter : Expr.Visitor<object>
 
         return new object(); // unreachable
     }
-            
+
     public object VisitGroupingExpr(Expr.Grouping expr)
     {
         return Evaluate(expr.Expression);
     }
-            
+
     public object VisitLiteralExpr(Expr.Literal expr)
     {
         return expr.Value;
     }
-            
+
     public object VisitUnaryExpr(Expr.Unary expr)
     {
         object right = Evaluate(expr.Right);
@@ -109,10 +109,9 @@ internal class Interpreter : Expr.Visitor<object>
 
     private bool IsTruthy(object obj)
     {
-        // false and nil are falsey
-        // everything else is truthy
-        if (obj is Nil) return false;
-        if (obj is bool b) return b;
+        // false and nil are falsey, everything else is truthy
+        if (obj is Nil) { return false; }
+        if (obj is bool b) { return b; }
         return true;
     }
 
@@ -122,16 +121,16 @@ internal class Interpreter : Expr.Visitor<object>
         return a.Equals(b);
     }
 
-    private void CheckNumberOperand(Token _operator, object operand)
+    private void CheckNumberOperand(Token @operator, object operand)
     {
-        if (operand is double) return;
-        throw new RuntimeError(_operator, "Operand must be a number.");
+        if (operand is double) { return; }
+        throw new RuntimeError(@operator, "Operand must be a number.");
     }
 
-    private void CheckNumberOperands(Token _operator, object left, object right)
+    private void CheckNumberOperands(Token @operator, object left, object right)
     {
-        if (left is double && right is double) return;
-        throw new RuntimeError(_operator, "Operands must be numbers.");
+        if (left is double && right is double) { return; }
+        throw new RuntimeError(@operator, "Operands must be numbers.");
     }
 
     private string Stringify(object obj)

@@ -1,6 +1,6 @@
-using cslox.lox.scanner;
+using Lox.Scanning;
 
-namespace cslox.lox.interpreter;
+namespace Lox.Interpreting;
 
 internal class RuntimeError : Exception
 {

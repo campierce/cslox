@@ -1,6 +1,6 @@
-using static cslox.lox.scanner.TokenType;
+using static Lox.Scanning.TokenType;
 
-namespace cslox.lox.scanner;
+namespace Lox.Scanning;
 
 internal class Scanner
 {
@@ -38,22 +38,22 @@ internal class Scanner
     /// </summary>
     private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
-        ["and"]    = AND,
-        ["class"]  = CLASS,
-        ["else"]   = ELSE,
-        ["false"]  = FALSE,
-        ["for"]    = FOR,
-        ["fun"]    = FUN,
-        ["if"]     = IF,
-        ["nil"]    = NIL,
-        ["or"]     = OR,
-        ["print"]  = PRINT,
+        ["and"] = AND,
+        ["class"] = CLASS,
+        ["else"] = ELSE,
+        ["false"] = FALSE,
+        ["for"] = FOR,
+        ["fun"] = FUN,
+        ["if"] = IF,
+        ["nil"] = NIL,
+        ["or"] = OR,
+        ["print"] = PRINT,
         ["return"] = RETURN,
-        ["super"]  = SUPER,
-        ["this"]   = THIS,
-        ["true"]   = TRUE,
-        ["var"]    = VAR,
-        ["while"]  = WHILE
+        ["super"] = SUPER,
+        ["this"] = THIS,
+        ["true"] = TRUE,
+        ["var"] = VAR,
+        ["while"] = WHILE
     };
     #endregion
 

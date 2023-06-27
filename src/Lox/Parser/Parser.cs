@@ -1,10 +1,8 @@
-using cslox.lox;
-using cslox.lox.ir;
-using cslox.lox.parser;
-using cslox.lox.scanner;
-using static cslox.lox.scanner.TokenType;
+using Lox.IR;
+using Lox.Scanning;
+using static Lox.Scanning.TokenType;
 
-namespace lox.cslox.parser;
+namespace Lox.Parsing;
 
 internal class Parser
 {
@@ -125,16 +123,16 @@ internal class Parser
 
     #region Grammar helpers
     private delegate Expr BinaryExprOperand();
-    
+
     private Expr LeftAssociativeBinaryExpr(BinaryExprOperand operand, params TokenType[] operators)
     {
         Expr expr = operand();
 
         while (Match(operators))
         {
-            Token _operator = Previous();
+            Token @operator = Previous();
             Expr right = operand();
-            expr = new Expr.Binary(expr, _operator, right);
+            expr = new Expr.Binary(expr, @operator, right);
         }
 
         return expr;
@@ -145,7 +143,7 @@ internal class Parser
     private Expr Expression()
     {
         // expression → equality ;
-        
+
         return Equality();
     }
 
@@ -184,9 +182,9 @@ internal class Parser
 
         if (Match(BANG, MINUS))
         {
-            Token _operator = Previous();
+            Token @operator = Previous();
             Expr right = Unary();
-            return new Expr.Unary(_operator, right);
+            return new Expr.Unary(@operator, right);
         }
 
         return Primary();
@@ -197,9 +195,9 @@ internal class Parser
         // primary → NUMBER | STRING | "true" | "false" | "nil"
         //         | "(" expression ")" ;
 
-        if (Match(FALSE)) return new Expr.Literal(false);
-        if (Match(TRUE)) return new Expr.Literal(true);
-        if (Match(NIL)) return new Expr.Literal(Nil.Instance);
+        if (Match(FALSE)) { return new Expr.Literal(false); }
+        if (Match(TRUE)) { return new Expr.Literal(true); }
+        if (Match(NIL)) { return new Expr.Literal(Nil.Instance); }
 
         if (Match(NUMBER, STRING))
         {
@@ -215,5 +213,5 @@ internal class Parser
 
         throw Error(Peek(), "Expect expression.");
     }
-  #endregion
+    #endregion
 }

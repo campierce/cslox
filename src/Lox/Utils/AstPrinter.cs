@@ -1,7 +1,7 @@
 using System.Text;
-using cslox.lox.ir;
+using Lox.IR;
 
-namespace cslox.lox;
+namespace Lox;
 
 internal class AstPrinter : Expr.Visitor<string>
 {

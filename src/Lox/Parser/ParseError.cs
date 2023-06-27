@@ -1,4 +1,4 @@
-namespace cslox.lox.parser;
+namespace Lox.Parsing;
 
 internal class ParseError : Exception
 {
