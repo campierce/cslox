@@ -3,9 +3,9 @@ namespace Lox.Tools;
 public class AstGenerator
 {
     /// <summary>
-    /// If the name of a parameter has this prefix, we strip it from
-    /// the derived property name (allows you, e.g., to create an
-    /// "Operator" prop despite "operator" being reserved.)
+    /// If a parameter has this prefix, we remove it from the derived property
+    /// name. Allows you, e.g., to create an "Operator" property despite
+    /// "operator" being a reserved keyword.
     /// </summary>
     private const char escapePrefix = '@';
 
@@ -33,19 +33,16 @@ public class AstGenerator
         );
 
         // define statement types
-        /*
         DefineAst(
             outputDir,
             "Stmt",
             new List<string>
             {
-                // TODO rename Expression or its Expression property
-                "Expression : Expr expression",
-                "Print      : Expr expression"
+                "Expression : Expr innerExpression",
+                "Print      : Expr content"
             },
             false
         );
-        */
     }
 
     #region StringBuilder helpers

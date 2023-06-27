@@ -6,7 +6,7 @@ public class IndentableStringBuilder
 {
     private readonly StringBuilder _sb;
     private readonly int _newlineLength;
-    private readonly int _width = 4;
+    private readonly int _width;
     private int _spaces;
 
     public IndentableStringBuilder()
