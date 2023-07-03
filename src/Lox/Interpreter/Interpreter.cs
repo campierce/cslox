@@ -1,18 +1,21 @@
 using Lox.IR;
 using Lox.Scanning;
 using static Lox.Scanning.TokenType;
+using Void = Lox.IR.Void;
 
 namespace Lox.Interpreting;
 
-internal class Interpreter : Expr.Visitor<object>
+internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 {
     #region API
-    public void Interpret(Expr expression)
+    public void Interpret(List<Stmt> statements)
     {
         try
         {
-            object value = Evaluate(expression);
-            Console.WriteLine(Stringify(value));
+            foreach (Stmt statement in statements)
+            {
+                Execute(statement);
+            }
         }
         catch (RuntimeError error)
         {
@@ -21,7 +24,7 @@ internal class Interpreter : Expr.Visitor<object>
     }
     #endregion
 
-    #region Visitor
+    #region Expr visitor
     public object VisitBinaryExpr(Expr.Binary expr)
     {
         object left = Evaluate(expr.Left);
@@ -101,10 +104,30 @@ internal class Interpreter : Expr.Visitor<object>
     }
     #endregion
 
+    #region Stmt visitor
+    public Void VisitExpressionStmt(Stmt.Expression stmt)
+    {
+        Evaluate(stmt.InnerExpression);
+        return default(Void);
+    }
+
+    public Void VisitPrintStmt(Stmt.Print stmt)
+    {
+        object value = Evaluate(stmt.Content);
+        Console.WriteLine(Stringify(value));
+        return default(Void);
+    }
+    #endregion
+
     #region Helpers
     private object Evaluate(Expr expr)
     {
         return expr.Accept(this);
+    }
+
+    private void Execute(Stmt stmt)
+    {
+        stmt.Accept(this);
     }
 
     private bool IsTruthy(object obj)

@@ -6,12 +6,14 @@ namespace Lox.Parsing;
 
 internal class Parser
 {
-    #region Fields/Properties
+    #region Fields/Properties/Delegates
     private readonly List<Token> _tokens;
 
     private int _current = 0;
 
     private bool IsAtEnd => Peek().Type == EOF;
+
+    private delegate Expr BinaryExprOperand();
     #endregion
 
     #region Constructors
@@ -22,16 +24,14 @@ internal class Parser
     #endregion
 
     #region API
-    public Expr? Parse()
+    public List<Stmt> Parse()
     {
-        try
+        List<Stmt> statements = new();
+        while (!IsAtEnd)
         {
-            return Expression();
+            statements.Add(Statement());
         }
-        catch // ParseError
-        {
-            return null;
-        }
+        return statements;
     }
     #endregion
 
@@ -121,8 +121,13 @@ internal class Parser
     }
     #endregion
 
-    #region Grammar helpers
-    private delegate Expr BinaryExprOperand();
+    #region Expressions
+    private Expr Expression()
+    {
+        // expression → equality ;
+
+        return Equality();
+    }
 
     private Expr LeftAssociativeBinaryExpr(BinaryExprOperand operand, params TokenType[] operators)
     {
@@ -136,15 +141,6 @@ internal class Parser
         }
 
         return expr;
-    }
-    #endregion
-
-    #region Grammar rules
-    private Expr Expression()
-    {
-        // expression → equality ;
-
-        return Equality();
     }
 
     private Expr Equality()
@@ -212,6 +208,31 @@ internal class Parser
         }
 
         throw Error(Peek(), "Expect expression.");
+    }
+    #endregion
+
+    #region Statements
+    private Stmt Statement()
+    {
+        if (Match(PRINT))
+        {
+            return PrintStatement();
+        }
+        return ExpressionStatement();
+    }
+
+    private Stmt PrintStatement()
+    {
+        Expr value = Expression();
+        Consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt ExpressionStatement()
+    {
+        Expr expr = Expression();
+        Consume(SEMICOLON, "Expect ';' after expression.");
+        return new Stmt.Expression(expr);
     }
     #endregion
 }
