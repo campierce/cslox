@@ -30,12 +30,17 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 
     public string VisitLiteralExpr(Expr.Literal expr)
     {
-        return expr.Value.ToString()!;
+        return expr.Value.ToString() ?? string.Empty;
     }
 
     public string VisitUnaryExpr(Expr.Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);
+    }
+
+    public string VisitVariableExpr(Expr.Variable expr)
+    {
+        return expr.Name.Lexeme;
     }
     #endregion
 
@@ -48,6 +53,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     public string VisitPrintStmt(Stmt.Print stmt)
     {
         return Parenthesize("print", stmt.Content);
+    }
+
+    public string VisitVarStmt(Stmt.Var stmt)
+    {
+        throw new NotImplementedException();
     }
     #endregion
 

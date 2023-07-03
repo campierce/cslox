@@ -102,6 +102,11 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
         return new object(); // unreachable
     }
+
+    public object VisitVariableExpr(Expr.Variable expr)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 
     #region Stmt visitor
@@ -116,6 +121,11 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         object value = Evaluate(stmt.Content);
         Console.WriteLine(Stringify(value));
         return default(Void);
+    }
+
+    public Void VisitVarStmt(Stmt.Var stmt)
+    {
+        throw new NotImplementedException();
     }
     #endregion
 

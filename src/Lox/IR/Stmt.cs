@@ -1,3 +1,5 @@
+using Lox.Scanning;
+
 namespace Lox.IR;
 
 internal abstract class Stmt
@@ -9,6 +11,8 @@ internal abstract class Stmt
         T VisitExpressionStmt(Expression stmt);
 
         T VisitPrintStmt(Print stmt);
+
+        T VisitVarStmt(Var stmt);
     }
 
     internal class Expression : Stmt
@@ -38,6 +42,23 @@ internal abstract class Stmt
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitPrintStmt(this);
+        }
+    }
+
+    internal class Var : Stmt
+    {
+        public Token Name { get; }
+        public Expr Initializer { get; }
+
+        public Var(Token name, Expr initializer)
+        {
+            Name = name;
+            Initializer = initializer;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitVarStmt(this);
         }
     }
 }

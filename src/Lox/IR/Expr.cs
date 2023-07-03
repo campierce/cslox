@@ -15,6 +15,8 @@ internal abstract class Expr
         T VisitLiteralExpr(Literal expr);
 
         T VisitUnaryExpr(Unary expr);
+
+        T VisitVariableExpr(Variable expr);
     }
 
     internal class Binary : Expr
@@ -80,6 +82,21 @@ internal abstract class Expr
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitUnaryExpr(this);
+        }
+    }
+
+    internal class Variable : Expr
+    {
+        public Token Name { get; }
+
+        public Variable(Token name)
+        {
+            Name = name;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitVariableExpr(this);
         }
     }
 }

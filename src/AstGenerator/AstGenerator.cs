@@ -28,7 +28,8 @@ public class AstGenerator
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Object value",
-                $"Unary   : Token {escapePrefix}operator, Expr right"
+                $"Unary   : Token {escapePrefix}operator, Expr right",
+                "Variable : Token name"
             }
         );
 
@@ -39,24 +40,20 @@ public class AstGenerator
             new List<string>
             {
                 "Expression : Expr innerExpression",
-                "Print      : Expr content"
-            },
-            false
+                "Print      : Expr content",
+                "Var        : Token name, Expr initializer"
+            }
         );
     }
 
     #region StringBuilder helpers
-    private static void DefineAst(
-        string outputDir, string baseName, List<string> types, bool usesTokens = true)
+    private static void DefineAst(string outputDir, string baseName, List<string> types)
     {
         IndentableStringBuilder sb = new();
 
         // top of file
-        if (usesTokens)
-        {
-            sb.AppendLine("using Lox.Scanning;");
-            sb.AppendLine();
-        }
+        sb.AppendLine("using Lox.Scanning;");
+        sb.AppendLine();
         sb.AppendLine("namespace Lox.IR;");
         sb.AppendLine();
 

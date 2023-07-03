@@ -26,10 +26,21 @@ internal class Parser
     #region API
     public List<Stmt> Parse()
     {
+        // program → declaration* EOF ;
+
         List<Stmt> statements = new();
         while (!IsAtEnd)
         {
-            statements.Add(Statement());
+            try
+            {
+                statements.Add(Declaration());
+            }
+            catch (ParseError)
+            {
+                // parse error means we won't try to interpret the statements
+                // but we should recover and keep parsing, to see what else we find
+                Synchronize();
+            }
         }
         return statements;
     }
@@ -188,8 +199,10 @@ internal class Parser
 
     private Expr Primary()
     {
-        // primary → NUMBER | STRING | "true" | "false" | "nil"
-        //         | "(" expression ")" ;
+        // primary → "true" | "false" | "nil"
+        //         | NUMBER | STRING
+        //         | "(" expression ")"
+        //         | IDENTIFIER ;
 
         if (Match(FALSE)) { return new Expr.Literal(false); }
         if (Match(TRUE)) { return new Expr.Literal(true); }
@@ -198,6 +211,11 @@ internal class Parser
         if (Match(NUMBER, STRING))
         {
             return new Expr.Literal(Previous().Literal);
+        }
+
+        if (Match(IDENTIFIER))
+        {
+            return new Expr.Variable(Previous());
         }
 
         if (Match(LEFT_PAREN))
@@ -212,8 +230,37 @@ internal class Parser
     #endregion
 
     #region Statements
+    private Stmt Declaration()
+    {
+        // declaration → varDecl | statement ;
+
+        if (Match(VAR))
+        {
+            return VarDeclaration();
+        }
+        return Statement();
+    }
+
+    private Stmt VarDeclaration()
+    {
+        // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
+
+        Token name = Consume(IDENTIFIER, "Expect variable name.");
+
+        Expr initializer = new Expr.Literal(Nil.Instance);
+        if (Match(EQUAL))
+        {
+            initializer = Expression();
+        }
+
+        Consume(SEMICOLON, "Expect ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
+    }
+    
     private Stmt Statement()
     {
+        // statement → exprStmt | printStmt ;
+
         if (Match(PRINT))
         {
             return PrintStatement();
@@ -223,6 +270,8 @@ internal class Parser
 
     private Stmt PrintStatement()
     {
+        // printStmt → "print" expression ";" ;
+
         Expr value = Expression();
         Consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
@@ -230,6 +279,8 @@ internal class Parser
 
     private Stmt ExpressionStatement()
     {
+        // exprStmt → expression ";" ;
+
         Expr expr = Expression();
         Consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
