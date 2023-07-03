@@ -3,16 +3,21 @@ using Lox.IR;
 
 namespace Lox;
 
-internal class AstPrinter : Expr.Visitor<string>
+internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 {
     #region API
     public string Print(Expr expr)
     {
         return expr.Accept(this);
     }
+
+    public string Print(Stmt stmt)
+    {
+        return stmt.Accept(this);
+    }
     #endregion
 
-    #region Visitor
+    #region Expr visitor
     public string VisitBinaryExpr(Expr.Binary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
@@ -31,6 +36,18 @@ internal class AstPrinter : Expr.Visitor<string>
     public string VisitUnaryExpr(Expr.Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);
+    }
+    #endregion
+
+    #region Stmt visitor
+    public string VisitExpressionStmt(Stmt.Expression stmt)
+    {
+        return Parenthesize(";", stmt.InnerExpression);
+    }
+
+    public string VisitPrintStmt(Stmt.Print stmt)
+    {
+        return Parenthesize("print", stmt.Content);
     }
     #endregion
 

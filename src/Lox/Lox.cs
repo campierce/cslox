@@ -66,8 +66,15 @@ public class Lox
 
         if (_hadError) { return; }
 
+        /*
+        AstPrinter printer = new();
+        foreach (Stmt statement in statements)
+        {
+            Console.WriteLine(printer.Print(statement));
+        }
+        */
+
         interpreter.Interpret(statements);
-        // Console.WriteLine(new AstPrinter().Print(expression!));
     }
 
     private static void Report(int line, string where, string message)
