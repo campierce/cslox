@@ -206,7 +206,7 @@ internal class Parser
 
         if (Match(FALSE)) { return new Expr.Literal(false); }
         if (Match(TRUE)) { return new Expr.Literal(true); }
-        if (Match(NIL)) { return new Expr.Literal(Nil.Instance); }
+        if (Match(NIL)) { return Nil.GetLiteral(); }
 
         if (Match(NUMBER, STRING))
         {
@@ -247,10 +247,14 @@ internal class Parser
 
         Token name = Consume(IDENTIFIER, "Expect variable name.");
 
-        Expr initializer = new Expr.Literal(Nil.Instance);
+        Expr initializer;
         if (Match(EQUAL))
         {
             initializer = Expression();
+        }
+        else
+        {
+            initializer = Nil.GetLiteral();
         }
 
         Consume(SEMICOLON, "Expect ';' after variable declaration.");

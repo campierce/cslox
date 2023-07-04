@@ -7,6 +7,10 @@ namespace Lox.Interpreting;
 
 internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 {
+    #region Fields
+    private Environment _environment = new();
+    #endregion
+
     #region API
     public void Interpret(List<Stmt> statements)
     {
@@ -105,7 +109,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
     public object VisitVariableExpr(Expr.Variable expr)
     {
-        throw new NotImplementedException();
+        return _environment.Get(expr.Name);
     }
     #endregion
 
@@ -125,7 +129,18 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
     public Void VisitVarStmt(Stmt.Var stmt)
     {
-        throw new NotImplementedException();
+        object value;
+        if (stmt.Initializer is not null)
+        {
+            value = Evaluate(stmt.Initializer);
+        }
+        else
+        {
+            value = Nil.GetLiteral();
+        }
+
+        _environment.Define(stmt.Name.Lexeme, value);
+        return default(Void);
     }
     #endregion
 
@@ -156,13 +171,19 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
     private void CheckNumberOperand(Token @operator, object operand)
     {
-        if (operand is double) { return; }
+        if (operand is double)
+        {
+            return;
+        }
         throw new RuntimeError(@operator, "Operand must be a number.");
     }
 
     private void CheckNumberOperands(Token @operator, object left, object right)
     {
-        if (left is double && right is double) { return; }
+        if (left is double && right is double)
+        {
+            return;
+        }
         throw new RuntimeError(@operator, "Operands must be numbers.");
     }
 

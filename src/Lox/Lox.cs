@@ -18,7 +18,7 @@ public class Lox
         if (args.Length > 1)
         {
             Console.Error.WriteLine("Usage: cslox [script]");
-            Environment.Exit(64);
+            System.Environment.Exit(64);
         }
         else if (args.Length == 1)
         {
@@ -35,8 +35,8 @@ public class Lox
         byte[] bytes = File.ReadAllBytes(path);
         Run(Encoding.Default.GetString(bytes));
 
-        if (_hadError) { Environment.Exit(64); } // EX_USAGE
-        if (_hadRuntimeError) { Environment.Exit(70); } // EX_SOFTWARE
+        if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
+        if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
     }
 
     private static void RunPrompt()
