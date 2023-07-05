@@ -1,5 +1,6 @@
 using System.Text;
 using Lox.IR;
+using Lox.Scanning;
 
 namespace Lox;
 
@@ -18,6 +19,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     #endregion
 
     #region Expr visitor
+    public string VisitAssignExpr(Expr.Assign expr)
+    {
+        return Parenthesize("=", expr.Name.Lexeme, expr.Value);
+    }
+
     public string VisitBinaryExpr(Expr.Binary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
@@ -57,25 +63,35 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 
     public string VisitVarStmt(Stmt.Var stmt)
     {
-        throw new NotImplementedException();
+        return Parenthesize("var", stmt.Name, "=", stmt.Initializer);
     }
     #endregion
 
     #region Helpers
-    private string Parenthesize(string name, params Expr[] exprs)
+    private string Parenthesize(string label, params object[] objects)
     {
-        StringBuilder builder = new();
+        StringBuilder sb = new();
 
-        builder.Append($"({name}");
-        foreach (Expr expr in exprs)
+        sb.Append($"({label}");
+        foreach (object obj in objects)
         {
-            builder.Append(" ");
-            // which method to call? ask the expression...
-            builder.Append(expr.Accept(this));
+            sb.Append(" ");
+            switch (obj)
+            {
+                case Expr expr:
+                    sb.Append(expr.Accept(this));
+                    break;
+                case Token token:
+                    sb.Append(token.Lexeme);
+                    break;
+                default:
+                    sb.Append(obj);
+                    break;
+            }
         }
-        builder.Append(")");
+        sb.Append(")");
 
-        return builder.ToString();
+        return sb.ToString();
     }
     #endregion
 }

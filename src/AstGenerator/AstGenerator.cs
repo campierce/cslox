@@ -25,6 +25,7 @@ public class AstGenerator
             "Expr",
             new List<string>
             {
+                "Assign   : Token name, Expr value",
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Object value",

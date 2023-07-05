@@ -29,6 +29,13 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     #endregion
 
     #region Expr visitor
+    public object VisitAssignExpr(Expr.Assign expr)
+    {
+        object value = Evaluate(expr.Value);
+        _environment.Assign(expr.Name, value);
+        return value;
+    }
+
     public object VisitBinaryExpr(Expr.Binary expr)
     {
         object left = Evaluate(expr.Left);
@@ -60,25 +67,17 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
         double a = (double)left;
         double b = (double)right;
-        switch (expr.Operator.Type)
+        return expr.Operator.Type switch
         {
-            case GREATER:
-                return a > b;
-            case GREATER_EQUAL:
-                return a >= b;
-            case LESS:
-                return a < b;
-            case LESS_EQUAL:
-                return a <= b;
-            case MINUS:
-                return a - b;
-            case SLASH:
-                return a / b;
-            case STAR:
-                return a * b;
-        }
-
-        return new object(); // unreachable
+            GREATER       => a > b,
+            GREATER_EQUAL => a >= b,
+            LESS          => a < b,
+            LESS_EQUAL    => a <= b,
+            MINUS         => a - b,
+            SLASH         => a / b,
+            STAR          => a * b,
+            _ => new object() // unreachable
+        };
     }
 
     public object VisitGroupingExpr(Expr.Grouping expr)

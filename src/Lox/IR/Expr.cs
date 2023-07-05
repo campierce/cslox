@@ -8,6 +8,8 @@ internal abstract class Expr
 
     internal interface Visitor<T>
     {
+        T VisitAssignExpr(Assign expr);
+
         T VisitBinaryExpr(Binary expr);
 
         T VisitGroupingExpr(Grouping expr);
@@ -17,6 +19,23 @@ internal abstract class Expr
         T VisitUnaryExpr(Unary expr);
 
         T VisitVariableExpr(Variable expr);
+    }
+
+    internal class Assign : Expr
+    {
+        public Token Name { get; }
+        public Expr Value { get; }
+
+        public Assign(Token name, Expr value)
+        {
+            Name = name;
+            Value = value;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitAssignExpr(this);
+        }
     }
 
     internal class Binary : Expr

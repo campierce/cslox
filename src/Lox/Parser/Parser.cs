@@ -135,20 +135,45 @@ internal class Parser
     #region Expressions
     private Expr Expression()
     {
-        // expression → equality ;
+        // expression → assignment ;
 
-        return Equality();
+        return Assignment();
+    }
+
+    private Expr Assignment()
+    {
+        // assignment → IDENTIFIER "=" assignment
+        //            | equality ;
+
+        Expr expr = Equality();
+
+        if (Match(EQUAL))
+        {
+            Token equals = Previous();
+            Expr value = Assignment(); // right associative
+
+            if (expr is Expr.Variable variable)
+            {
+                return new Expr.Assign(variable.Name, value);
+            }
+
+            Error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     private Expr LeftAssociativeBinaryExpr(BinaryExprOperand operand, params TokenType[] operators)
     {
+        // parse expressions with higher precedence
         Expr expr = operand();
 
+        // consume operators at the current precedence level
         while (Match(operators))
         {
             Token @operator = Previous();
             Expr right = operand();
-            expr = new Expr.Binary(expr, @operator, right);
+            expr = new Expr.Binary(expr, @operator, right); // left associative
         }
 
         return expr;
@@ -232,7 +257,8 @@ internal class Parser
     #region Statements
     private Stmt Declaration()
     {
-        // declaration → varDecl | statement ;
+        // declaration → varDecl
+        //             | statement ;
 
         if (Match(VAR))
         {
@@ -263,7 +289,8 @@ internal class Parser
     
     private Stmt Statement()
     {
-        // statement → exprStmt | printStmt ;
+        // statement → exprStmt
+        //           | printStmt ;
 
         if (Match(PRINT))
         {
