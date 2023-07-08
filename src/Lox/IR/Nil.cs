@@ -1,7 +1,7 @@
 namespace Lox.IR;
 
 /// <summary>
-/// Box around null.
+/// Boxed null.
 /// If we were to represent Lox's nil with C#'s null, then any literal value must be typed
 /// as an object? (or we overcorrect and disable nullable reference types in the project).
 /// That's fine, but it reads like "literals can be missing" when really the missing state

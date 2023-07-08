@@ -40,6 +40,7 @@ public class AstGenerator
             "Stmt",
             new List<string>
             {
+                "Block      : List<Stmt> statements",
                 "Expression : Expr innerExpression",
                 "Print      : Expr content",
                 "Var        : Token name, Expr initializer"

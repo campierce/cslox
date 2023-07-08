@@ -51,6 +51,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     #endregion
 
     #region Stmt visitor
+    public string VisitBlockStmt(Stmt.Block stmt)
+    {
+        return Parenthesize("block", stmt.Statements.ToArray());
+    }
+
     public string VisitExpressionStmt(Stmt.Expression stmt)
     {
         return Parenthesize(";", stmt.InnerExpression);
@@ -79,7 +84,10 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
             switch (obj)
             {
                 case Expr expr:
-                    sb.Append(expr.Accept(this));
+                    sb.Append(Print(expr));
+                    break;
+                case Stmt stmt:
+                    sb.Append(Print(stmt));
                     break;
                 case Token token:
                     sb.Append(token.Lexeme);

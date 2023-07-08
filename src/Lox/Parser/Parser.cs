@@ -289,13 +289,12 @@ internal class Parser
     
     private Stmt Statement()
     {
-        // statement → exprStmt
-        //           | printStmt ;
+        // statement → printStmt
+        //           | block
+        //           | exprStmt ;
 
-        if (Match(PRINT))
-        {
-            return PrintStatement();
-        }
+        if (Match(PRINT)) { return PrintStatement(); }
+        if (Match(LEFT_BRACE)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
     }
 
@@ -315,6 +314,20 @@ internal class Parser
         Expr expr = Expression();
         Consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
+    }
+
+    private List<Stmt> Block()
+    {
+        // block → "{" declaration* "}" ;
+
+        List<Stmt> statements = new();
+        while (!Check(RIGHT_BRACE) && !IsAtEnd)
+        {
+            statements.Add(Declaration());
+        }
+
+        Consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
     }
     #endregion
 }

@@ -113,6 +113,12 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     #endregion
 
     #region Stmt visitor
+    public Void VisitBlockStmt(Stmt.Block stmt)
+    {
+        ExecuteBlock(stmt.Statements, new Environment(_environment));
+        return default(Void);
+    }
+
     public Void VisitExpressionStmt(Stmt.Expression stmt)
     {
         Evaluate(stmt.InnerExpression);
@@ -143,7 +149,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     }
     #endregion
 
-    #region Helpers
+    #region Instance helpers
     private object Evaluate(Expr expr)
     {
         return expr.Accept(this);
@@ -154,21 +160,42 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         stmt.Accept(this);
     }
 
-    private bool IsTruthy(object obj)
+    private void ExecuteBlock(List<Stmt> statements, Environment environment)
+    {
+        _environment = environment;
+        try
+        {
+            foreach (Stmt statement in statements)
+            {
+                Execute(statement);
+            }
+        }
+        finally
+        {
+            _environment = _environment.Enclosing!; // discard this block's scope
+        }
+    }
+    #endregion
+
+    #region Static helpers
+    private static bool IsTruthy(object obj)
     {
         // false and nil are falsey, everything else is truthy
-        if (obj is Nil) { return false; }
-        if (obj is bool b) { return b; }
-        return true;
+        return obj switch
+        {
+            Nil    => false,
+            bool b => b,
+            _      => true
+        };
     }
 
-    private bool IsEqual(object a, object b)
+    private static bool IsEqual(object a, object b)
     {
         // we're fine with C#'s notion of equality
         return a.Equals(b);
     }
 
-    private void CheckNumberOperand(Token @operator, object operand)
+    private static void CheckNumberOperand(Token @operator, object operand)
     {
         if (operand is double)
         {
@@ -177,7 +204,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         throw new RuntimeError(@operator, "Operand must be a number.");
     }
 
-    private void CheckNumberOperands(Token @operator, object left, object right)
+    private static void CheckNumberOperands(Token @operator, object left, object right)
     {
         if (left is double && right is double)
         {
@@ -186,7 +213,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         throw new RuntimeError(@operator, "Operands must be numbers.");
     }
 
-    private string Stringify(object obj)
+    private static string Stringify(object obj)
     {
         if (obj is double num)
         {

@@ -8,11 +8,28 @@ internal abstract class Stmt
 
     internal interface Visitor<T>
     {
+        T VisitBlockStmt(Block stmt);
+
         T VisitExpressionStmt(Expression stmt);
 
         T VisitPrintStmt(Print stmt);
 
         T VisitVarStmt(Var stmt);
+    }
+
+    internal class Block : Stmt
+    {
+        public List<Stmt> Statements { get; }
+
+        public Block(List<Stmt> statements)
+        {
+            Statements = statements;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitBlockStmt(this);
+        }
     }
 
     internal class Expression : Stmt
