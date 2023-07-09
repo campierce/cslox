@@ -2,6 +2,7 @@ using Lox.Scanning;
 
 namespace Lox.IR;
 
+// Generated code; see AstGenerator to make changes.
 internal abstract class Stmt
 {
     public abstract T Accept<T>(Visitor<T> visitor);
@@ -12,9 +13,13 @@ internal abstract class Stmt
 
         T VisitExpressionStmt(Expression stmt);
 
+        T VisitIfStmt(If stmt);
+
         T VisitPrintStmt(Print stmt);
 
         T VisitVarStmt(Var stmt);
+
+        T VisitWhileStmt(While stmt);
     }
 
     internal class Block : Stmt
@@ -47,6 +52,25 @@ internal abstract class Stmt
         }
     }
 
+    internal class If : Stmt
+    {
+        public Expr Condition { get; }
+        public Stmt ThenBranch { get; }
+        public Stmt? ElseBranch { get; }
+
+        public If(Expr condition, Stmt thenBranch, Stmt? elseBranch)
+        {
+            Condition = condition;
+            ThenBranch = thenBranch;
+            ElseBranch = elseBranch;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitIfStmt(this);
+        }
+    }
+
     internal class Print : Stmt
     {
         public Expr Content { get; }
@@ -76,6 +100,23 @@ internal abstract class Stmt
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitVarStmt(this);
+        }
+    }
+
+    internal class While : Stmt
+    {
+        public Expr Condition { get; }
+        public Stmt Body { get; }
+
+        public While(Expr condition, Stmt body)
+        {
+            Condition = condition;
+            Body = body;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitWhileStmt(this);
         }
     }
 }

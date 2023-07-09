@@ -39,6 +39,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
         return expr.Value.ToString() ?? string.Empty;
     }
 
+    public string VisitLogicalExpr(Expr.Logical expr)
+    {
+        return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
+    }
+
     public string VisitUnaryExpr(Expr.Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);
@@ -61,6 +66,18 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
         return Parenthesize(";", stmt.InnerExpression);
     }
 
+    public string VisitIfStmt(Stmt.If stmt)
+    {
+        if (stmt.ElseBranch is null)
+        {
+            return Parenthesize("if", stmt.Condition, stmt.ThenBranch);
+        }
+        else
+        {
+            return Parenthesize("if-else", stmt.Condition, stmt.ThenBranch, stmt.ElseBranch);
+        }
+    }
+
     public string VisitPrintStmt(Stmt.Print stmt)
     {
         return Parenthesize("print", stmt.Content);
@@ -69,6 +86,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     public string VisitVarStmt(Stmt.Var stmt)
     {
         return Parenthesize("var", stmt.Name, "=", stmt.Initializer);
+    }
+
+    public string VisitWhileStmt(Stmt.While stmt)
+    {
+        return Parenthesize("while", stmt.Condition, stmt.Body);
     }
     #endregion
 

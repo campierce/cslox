@@ -3,9 +3,8 @@ namespace Lox.Tools;
 public class AstGenerator
 {
     /// <summary>
-    /// If a parameter has this prefix, we remove it from the derived property
-    /// name. Allows you, e.g., to create an "Operator" property despite
-    /// "operator" being a reserved keyword.
+    /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
+    /// e.g., to create an "Operator" property despite "operator" being a reserved keyword.
     /// </summary>
     private const char escapePrefix = '@';
 
@@ -29,6 +28,7 @@ public class AstGenerator
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Object value",
+                $"Logical : Expr left, Token {escapePrefix}operator, Expr right",
                 $"Unary   : Token {escapePrefix}operator, Expr right",
                 "Variable : Token name"
             }
@@ -42,13 +42,15 @@ public class AstGenerator
             {
                 "Block      : List<Stmt> statements",
                 "Expression : Expr innerExpression",
+                "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr content",
-                "Var        : Token name, Expr initializer"
+                "Var        : Token name, Expr initializer",
+                "While      : Expr condition, Stmt body"
             }
         );
     }
 
-    #region StringBuilder helpers
+    #region String building helpers
     private static void DefineAst(string outputDir, string baseName, List<string> types)
     {
         IndentableStringBuilder sb = new();
@@ -60,6 +62,7 @@ public class AstGenerator
         sb.AppendLine();
 
         // abstract base class
+        sb.AppendLine("// Generated code; see AstGenerator to make changes.");
         sb.AppendLine($"internal abstract class {baseName}");
         sb.AppendLine("{");
         sb.Indent();

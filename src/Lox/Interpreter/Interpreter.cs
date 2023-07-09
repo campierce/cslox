@@ -90,6 +90,23 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         return expr.Value;
     }
 
+    public object VisitLogicalExpr(Expr.Logical expr)
+    {
+        object left = Evaluate(expr.Left);
+
+        // attempt to short circuit
+        if (expr.Operator.Type == OR)
+        {
+            if (IsTruthy(left)) { return left; }
+        }
+        else
+        {
+            if (!IsTruthy(left)) { return left; }
+        }
+
+        return Evaluate(expr.Right);
+    }
+
     public object VisitUnaryExpr(Expr.Unary expr)
     {
         object right = Evaluate(expr.Right);
@@ -125,6 +142,19 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         return default(Void);
     }
 
+    public Void VisitIfStmt(Stmt.If stmt)
+    {
+        if (IsTruthy(Evaluate(stmt.Condition)))
+        {
+            Execute(stmt.ThenBranch);
+        }
+        else if (stmt.ElseBranch is not null)
+        {
+            Execute(stmt.ElseBranch);
+        }
+        return default(Void);
+    }
+
     public Void VisitPrintStmt(Stmt.Print stmt)
     {
         object value = Evaluate(stmt.Content);
@@ -134,17 +164,17 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
     public Void VisitVarStmt(Stmt.Var stmt)
     {
-        object value;
-        if (stmt.Initializer is not null)
-        {
-            value = Evaluate(stmt.Initializer);
-        }
-        else
-        {
-            value = Nil.GetLiteral();
-        }
-
+        object value = Evaluate(stmt.Initializer);
         _environment.Define(stmt.Name.Lexeme, value);
+        return default(Void);
+    }
+
+    public Void VisitWhileStmt(Stmt.While stmt)
+    {
+        while (IsTruthy(Evaluate(stmt.Condition)))
+        {
+            Execute(stmt.Body);
+        }
         return default(Void);
     }
     #endregion
@@ -180,7 +210,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     #region Static helpers
     private static bool IsTruthy(object obj)
     {
-        // false and nil are falsey, everything else is truthy
+        // nil and false are falsey, everything else is truthy
         return obj switch
         {
             Nil    => false,

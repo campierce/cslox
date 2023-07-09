@@ -2,6 +2,7 @@ using Lox.Scanning;
 
 namespace Lox.IR;
 
+// Generated code; see AstGenerator to make changes.
 internal abstract class Expr
 {
     public abstract T Accept<T>(Visitor<T> visitor);
@@ -15,6 +16,8 @@ internal abstract class Expr
         T VisitGroupingExpr(Grouping expr);
 
         T VisitLiteralExpr(Literal expr);
+
+        T VisitLogicalExpr(Logical expr);
 
         T VisitUnaryExpr(Unary expr);
 
@@ -84,6 +87,25 @@ internal abstract class Expr
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitLiteralExpr(this);
+        }
+    }
+
+    internal class Logical : Expr
+    {
+        public Expr Left { get; }
+        public Token Operator { get; }
+        public Expr Right { get; }
+
+        public Logical(Expr left, Token @operator, Expr right)
+        {
+            Left = left;
+            Operator = @operator;
+            Right = right;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitLogicalExpr(this);
         }
     }
 

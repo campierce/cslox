@@ -47,7 +47,7 @@ public class Lox
         {
             Console.Write("> ");
             string? line = reader.ReadLine();
-            if (line == null) // ctrl + d = end of input
+            if (line is null) // ctrl + d = end of input
             {
                 break;
             }

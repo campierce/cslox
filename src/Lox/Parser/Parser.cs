@@ -13,7 +13,7 @@ internal class Parser
 
     private bool IsAtEnd => Peek().Type == EOF;
 
-    private delegate Expr BinaryExprOperand();
+    private delegate Expr BinaryLikeExprOperand();
     #endregion
 
     #region Constructors
@@ -143,14 +143,14 @@ internal class Parser
     private Expr Assignment()
     {
         // assignment → IDENTIFIER "=" assignment
-        //            | equality ;
+        //            | logic_or ;
 
-        Expr expr = Equality();
+        Expr expr = Or();
 
         if (Match(EQUAL))
         {
             Token equals = Previous();
-            Expr value = Assignment(); // right associative
+            Expr value = Assignment(); // right-associative
 
             if (expr is Expr.Variable variable)
             {
@@ -163,9 +163,23 @@ internal class Parser
         return expr;
     }
 
-    private Expr LeftAssociativeBinaryExpr(BinaryExprOperand operand, params TokenType[] operators)
+    /// <summary>
+    /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
+    /// <see cref="Expr.Logical"/>.
+    /// </summary>
+    /// <typeparam name="TExpr">The concrete type to parse.</typeparam>
+    /// <param name="operand">
+    /// A delegate that parses expressions of higher precedence than that specified by the given
+    /// operators.
+    /// </param>
+    /// <param name="operators">
+    /// The operators that are allowed to participate in this binary-like expression.
+    /// </param>
+    /// <returns>An expression.</returns>
+    private Expr BinaryLikeExpr<TExpr>(
+        BinaryLikeExprOperand operand, params TokenType[] operators) where TExpr : Expr
     {
-        // parse expressions with higher precedence
+        // parse expressions of higher precedence
         Expr expr = operand();
 
         // consume operators at the current precedence level
@@ -173,38 +187,53 @@ internal class Parser
         {
             Token @operator = Previous();
             Expr right = operand();
-            expr = new Expr.Binary(expr, @operator, right); // left associative
+            // new expression is left-associative
+            expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, @operator, right)!;
         }
 
         return expr;
+    }
+
+    private Expr Or()
+    {
+        // logic_or → logic_and ( "or" logic_and )* ;
+
+        return BinaryLikeExpr<Expr.Logical>(And, OR);
+    }
+
+    private Expr And()
+    {
+        // logic_and → equality ( "and" equality )* ;
+
+        return BinaryLikeExpr<Expr.Logical>(Equality, AND);
     }
 
     private Expr Equality()
     {
         // equality → comparison ( ( "!=" | "==" ) comparison )* ;
 
-        return LeftAssociativeBinaryExpr(Comparison, BANG_EQUAL, EQUAL_EQUAL);
+        return BinaryLikeExpr<Expr.Binary>(Comparison, BANG_EQUAL, EQUAL_EQUAL);
     }
 
     private Expr Comparison()
     {
         // comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 
-        return LeftAssociativeBinaryExpr(Term, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL);
+        return BinaryLikeExpr<Expr.Binary>(Term, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL);
     }
 
     private Expr Term()
     {
         // term → factor ( ( "-" | "+" ) factor )* ;
 
-        return LeftAssociativeBinaryExpr(Factor, MINUS, PLUS);
+        return BinaryLikeExpr<Expr.Binary>(Factor, MINUS, PLUS);
     }
 
     private Expr Factor()
     {
         // factor → unary ( ( "/" | "*" ) unary )* ;
 
-        return LeftAssociativeBinaryExpr(Unary, SLASH, STAR);
+        return BinaryLikeExpr<Expr.Binary>(Unary, SLASH, STAR);
     }
 
     private Expr Unary()
@@ -226,8 +255,8 @@ internal class Parser
     {
         // primary → "true" | "false" | "nil"
         //         | NUMBER | STRING
-        //         | "(" expression ")"
-        //         | IDENTIFIER ;
+        //         | IDENTIFIER
+        //         | "(" expression ")" ;
 
         if (Match(FALSE)) { return new Expr.Literal(false); }
         if (Match(TRUE)) { return new Expr.Literal(true); }
@@ -289,13 +318,104 @@ internal class Parser
     
     private Stmt Statement()
     {
-        // statement → printStmt
+        // statement → forStmt
+        //           | ifStmt
+        //           | printStmt
+        //           | whileStmt
         //           | block
         //           | exprStmt ;
 
+        if (Match(FOR)) { return ForStatement(); }
+        if (Match(IF)) { return IfStatement(); }
         if (Match(PRINT)) { return PrintStatement(); }
+        if (Match(WHILE)) { return WhileStatement(); }
         if (Match(LEFT_BRACE)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
+    }
+
+    private Stmt ForStatement()
+    {
+        // forStmt → "for" "(" ( varDecl | exprStmt | ";" )
+        //           expression? ";"
+        //           expression? ")" statement ;
+
+        Consume(LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt? initializer;
+        if (Match(SEMICOLON))
+        {
+            initializer = null;
+        }
+        else if (Match(VAR))
+        {
+            initializer = VarDeclaration();
+        }
+        else
+        {
+            initializer = ExpressionStatement();
+        }
+
+        Expr? condition = null;
+        if (!Check(SEMICOLON))
+        {
+            condition = Expression();
+        }
+        Consume(SEMICOLON, "Expect ';' after loop condition");
+
+        Expr? increment = null;
+        if (!Check(RIGHT_PAREN))
+        {
+            increment = Expression();
+        }
+        Consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+        
+        Stmt body = Statement();
+
+        // translate ("desugar") to a while loop...
+
+        // evaluate the increment after the body
+        if (increment is not null)
+        {
+            body = new Stmt.Block(
+                new List<Stmt> { body, new Stmt.Expression(increment) });
+        }
+
+        // make sure there's a condition
+        if (condition is null)
+        {
+            condition = new Expr.Literal(true);
+        }
+
+        // create the loop
+        body = new Stmt.While(condition, body);
+
+        // run the initializer once, before the loop
+        if (initializer is not null)
+        {
+            body = new Stmt.Block(new List<Stmt> { initializer, body });
+        }
+
+        return body;
+    }
+
+    private Stmt IfStatement()
+    {
+        // ifStmt → "if" "(" expression ")" statement
+        //          ( "else" statement )? ;
+
+        Consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = Expression();
+        Consume(RIGHT_PAREN, "Expect ')' after if condition.");
+        
+        Stmt thenBranch = Statement(); // notice: not a declaration
+        
+        Stmt? elseBranch = null;
+        if (Match(ELSE))
+        {
+            elseBranch = Statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     private Stmt PrintStatement()
@@ -305,6 +425,18 @@ internal class Parser
         Expr value = Expression();
         Consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    private Stmt WhileStatement()
+    {
+        // whileStmt → "while" "(" expression ")" statement ;
+
+        Consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = Expression();
+        Consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = Statement();
+
+        return new Stmt.While(condition, body);
     }
 
     private Stmt ExpressionStatement()
