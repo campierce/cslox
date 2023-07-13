@@ -13,6 +13,8 @@ internal abstract class Expr
 
         T VisitBinaryExpr(Binary expr);
 
+        T VisitCallExpr(Call expr);
+
         T VisitGroupingExpr(Grouping expr);
 
         T VisitLiteralExpr(Literal expr);
@@ -57,6 +59,25 @@ internal abstract class Expr
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitBinaryExpr(this);
+        }
+    }
+
+    internal class Call : Expr
+    {
+        public Expr Callee { get; }
+        public Token Paren { get; }
+        public List<Expr> Arguments { get; }
+
+        public Call(Expr callee, Token paren, List<Expr> arguments)
+        {
+            Callee = callee;
+            Paren = paren;
+            Arguments = arguments;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitCallExpr(this);
         }
     }
 

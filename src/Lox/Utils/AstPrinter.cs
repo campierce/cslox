@@ -29,6 +29,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
     }
 
+    public string VisitCallExpr(Expr.Call expr)
+    {
+        return Parenthesize("call", expr.Callee, expr.Arguments);
+    }
+
     public string VisitGroupingExpr(Expr.Grouping expr)
     {
         return Parenthesize("group", expr.Expression);
@@ -58,7 +63,7 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     #region Stmt visitor
     public string VisitBlockStmt(Stmt.Block stmt)
     {
-        return Parenthesize("block", stmt.Statements.ToArray());
+        return Parenthesize("block", stmt.Statements);
     }
 
     public string VisitExpressionStmt(Stmt.Expression stmt)
@@ -95,30 +100,41 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     #endregion
 
     #region Helpers
-    private string Parenthesize(string label, params object[] objects)
+    private void Transform(StringBuilder sb, params object[] parts)
     {
-        StringBuilder sb = new();
-
-        sb.Append($"({label}");
-        foreach (object obj in objects)
+        foreach (object part in parts)
         {
             sb.Append(" ");
-            switch (obj)
+            switch (part)
             {
+                case Token token:
+                    sb.Append(token.Lexeme);
+                    break;
                 case Expr expr:
                     sb.Append(Print(expr));
                     break;
                 case Stmt stmt:
                     sb.Append(Print(stmt));
                     break;
-                case Token token:
-                    sb.Append(token.Lexeme);
+                case List<Expr> exprList:
+                    Transform(sb, exprList.ToArray());
+                    break;
+                case List<Stmt> stmtList:
+                    Transform(sb, stmtList.ToArray());
                     break;
                 default:
-                    sb.Append(obj);
+                    sb.Append(part);
                     break;
             }
         }
+    }
+
+    private string Parenthesize(string label, params object[] parts)
+    {
+        StringBuilder sb = new();
+
+        sb.Append($"({label}");
+        Transform(sb, parts);
         sb.Append(")");
 
         return sb.ToString();

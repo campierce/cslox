@@ -15,8 +15,5 @@ internal class Token
         this.Line = line;
     }
 
-    public override string ToString()
-    {
-        return $"{Type} {Lexeme} {Literal}";
-    }
+    public override string ToString() => $"{Type} {Lexeme} {Literal}";
 }

@@ -8,7 +8,20 @@ namespace Lox.Interpreting;
 internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 {
     #region Fields
-    private Environment _environment = new();
+    private readonly Environment _globals;
+
+    private Environment _environment;
+    #endregion
+
+    #region Constructors
+    public Interpreter()
+    {
+        _globals = new Environment();
+        _environment = _globals;
+
+        // define native functions
+        _globals.Define("clock", new Clock());
+    }
     #endregion
 
     #region API
@@ -67,6 +80,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
         double a = (double)left;
         double b = (double)right;
+        #pragma warning disable format
         return expr.Operator.Type switch
         {
             GREATER       => a > b,
@@ -78,6 +92,31 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
             STAR          => a * b,
             _ => new object() // unreachable
         };
+        #pragma warning restore format
+    }
+
+    public object VisitCallExpr(Expr.Call expr)
+    {
+        object callee = Evaluate(expr.Callee);
+
+        List<object> arguments = new();
+        foreach (Expr argument in expr.Arguments)
+        {
+            arguments.Add(Evaluate(argument));
+        }
+
+        if (callee is ICallable function)
+        {
+            if (arguments.Count != function.Arity)
+            {
+                throw new RuntimeError(
+                    expr.Paren,
+                    $"Expected {function.Arity} arguments but got {arguments.Count}."
+                );
+            }
+            return function.Call(this, arguments);
+        }
+        throw new RuntimeError(expr.Paren, "Can only call functions and classes.");
     }
 
     public object VisitGroupingExpr(Expr.Grouping expr)
@@ -211,12 +250,14 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     private static bool IsTruthy(object obj)
     {
         // nil and false are falsey, everything else is truthy
+        #pragma warning disable format
         return obj switch
         {
             Nil    => false,
             bool b => b,
             _      => true
         };
+        #pragma warning disable format
     }
 
     private static bool IsEqual(object a, object b)

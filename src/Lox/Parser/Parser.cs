@@ -133,36 +133,7 @@ internal class Parser
     #endregion
 
     #region Expressions
-    private Expr Expression()
-    {
-        // expression → assignment ;
-
-        return Assignment();
-    }
-
-    private Expr Assignment()
-    {
-        // assignment → IDENTIFIER "=" assignment
-        //            | logic_or ;
-
-        Expr expr = Or();
-
-        if (Match(EQUAL))
-        {
-            Token equals = Previous();
-            Expr value = Assignment(); // right-associative
-
-            if (expr is Expr.Variable variable)
-            {
-                return new Expr.Assign(variable.Name, value);
-            }
-
-            Error(equals, "Invalid assignment target.");
-        }
-
-        return expr;
-    }
-
+    #region Helpers
     /// <summary>
     /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
     /// <see cref="Expr.Logical"/>.
@@ -189,6 +160,58 @@ internal class Parser
             Expr right = operand();
             // new expression is left-associative
             expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, @operator, right)!;
+        }
+
+        return expr;
+    }
+
+    private Expr FinishCall(Expr callee)
+    {
+        List<Expr> arguments = new();
+
+        if (!Check(RIGHT_PAREN))
+        {
+            do
+            {
+                if (arguments.Count > 255)
+                {
+                    Error(Peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.Add(Expression());
+            } while (Match(COMMA));
+        }
+
+        Token paren = Consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
+    }
+    #endregion
+
+    private Expr Expression()
+    {
+        // expression → assignment ;
+
+        return Assignment();
+    }
+
+    private Expr Assignment()
+    {
+        // assignment → IDENTIFIER "=" assignment
+        //            | logic_or ;
+
+        Expr expr = Or();
+
+        if (Match(EQUAL))
+        {
+            Token equals = Previous();
+            Expr value = Assignment(); // right-associative
+
+            if (expr is Expr.Variable variable)
+            {
+                return new Expr.Assign(variable.Name, value);
+            }
+
+            Error(equals, "Invalid assignment target.");
         }
 
         return expr;
@@ -239,7 +262,7 @@ internal class Parser
     private Expr Unary()
     {
         // unary → ( "!" | "-" ) unary
-        //       | primary ;
+        //       | call ;
 
         if (Match(BANG, MINUS))
         {
@@ -248,7 +271,28 @@ internal class Parser
             return new Expr.Unary(@operator, right);
         }
 
-        return Primary();
+        return Call();
+    }
+
+    private Expr Call()
+    {
+        // call → primary ( "(" arguments? ")" )* ;
+
+        Expr expr = Primary();
+
+        while (true)
+        {
+            if (Match(LEFT_PAREN))
+            {
+                expr = FinishCall(expr);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return expr;
     }
 
     private Expr Primary()
@@ -315,7 +359,7 @@ internal class Parser
         Consume(SEMICOLON, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
     }
-    
+
     private Stmt Statement()
     {
         // statement → forStmt
@@ -368,7 +412,7 @@ internal class Parser
             increment = Expression();
         }
         Consume(RIGHT_PAREN, "Expect ')' after for clauses.");
-        
+
         Stmt body = Statement();
 
         // translate ("desugar") to a while loop...
@@ -406,9 +450,9 @@ internal class Parser
         Consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = Expression();
         Consume(RIGHT_PAREN, "Expect ')' after if condition.");
-        
+
         Stmt thenBranch = Statement(); // notice: not a declaration
-        
+
         Stmt? elseBranch = null;
         if (Match(ELSE))
         {

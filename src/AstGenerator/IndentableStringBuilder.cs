@@ -4,18 +4,10 @@ using System.Text;
 
 public class IndentableStringBuilder
 {
-    private readonly StringBuilder _sb;
-    private readonly int _newlineLength;
-    private readonly int _width;
-    private int _spaces;
-
-    public IndentableStringBuilder()
-    {
-        _sb = new StringBuilder();
-        _newlineLength = Environment.NewLine.Length;
-        _width = 4;
-        _spaces = 0;
-    }
+    private readonly StringBuilder _sb = new();
+    private readonly int _newlineLength = Environment.NewLine.Length;
+    private readonly int _width = 4;
+    private int _spaces = 0;
 
     public void Indent()
     {
@@ -53,10 +45,7 @@ public class IndentableStringBuilder
         _sb.AppendLine();
     }
 
-    public override string ToString()
-    {
-        return _sb.ToString();
-    }
+    public override string ToString() => _sb.ToString();
 
     private string SpacePrefixed(string value)
     {

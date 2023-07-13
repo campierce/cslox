@@ -23,8 +23,5 @@ internal class Nil
         return new Expr.Literal(Nil.Instance);
     }
 
-    public override string ToString()
-    {
-        return "nil";
-    }
+    public override string ToString() => "nil";
 }
