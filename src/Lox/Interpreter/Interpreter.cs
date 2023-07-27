@@ -181,6 +181,11 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         return default(Void);
     }
 
+    public Void VisitFunctionStmt(Stmt.Function stmt)
+    {
+        throw new NotImplementedException();
+    }
+
     public Void VisitIfStmt(Stmt.If stmt)
     {
         if (IsTruthy(Evaluate(stmt.Condition)))

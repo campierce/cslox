@@ -14,6 +14,8 @@ internal class Parser
     private bool IsAtEnd => Peek().Type == EOF;
 
     private delegate Expr BinaryLikeExprOperand();
+
+    private delegate TItem ListItemConsumer<TItem>();
     #endregion
 
     #region Constructors
@@ -133,60 +135,6 @@ internal class Parser
     #endregion
 
     #region Expressions
-    #region Helpers
-    /// <summary>
-    /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
-    /// <see cref="Expr.Logical"/>.
-    /// </summary>
-    /// <typeparam name="TExpr">The concrete type to parse.</typeparam>
-    /// <param name="operand">
-    /// A delegate that parses expressions of higher precedence than that specified by the given
-    /// operators.
-    /// </param>
-    /// <param name="operators">
-    /// The operators that are allowed to participate in this binary-like expression.
-    /// </param>
-    /// <returns>An expression.</returns>
-    private Expr BinaryLikeExpr<TExpr>(
-        BinaryLikeExprOperand operand, params TokenType[] operators) where TExpr : Expr
-    {
-        // parse expressions of higher precedence
-        Expr expr = operand();
-
-        // consume operators at the current precedence level
-        while (Match(operators))
-        {
-            Token @operator = Previous();
-            Expr right = operand();
-            // new expression is left-associative
-            expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, @operator, right)!;
-        }
-
-        return expr;
-    }
-
-    private Expr FinishCall(Expr callee)
-    {
-        List<Expr> arguments = new();
-
-        if (!Check(RIGHT_PAREN))
-        {
-            do
-            {
-                if (arguments.Count > 255)
-                {
-                    Error(Peek(), "Can't have more than 255 arguments.");
-                }
-                arguments.Add(Expression());
-            } while (Match(COMMA));
-        }
-
-        Token paren = Consume(RIGHT_PAREN, "Expect ')' after arguments.");
-
-        return new Expr.Call(callee, paren, arguments);
-    }
-    #endregion
-
     private Expr Expression()
     {
         // expression → assignment ;
@@ -197,7 +145,7 @@ internal class Parser
     private Expr Assignment()
     {
         // assignment → IDENTIFIER "=" assignment
-        //            | logic_or ;
+        //            | logicOr ;
 
         Expr expr = Or();
 
@@ -219,14 +167,14 @@ internal class Parser
 
     private Expr Or()
     {
-        // logic_or → logic_and ( "or" logic_and )* ;
+        // logicOr → logicAnd ( "or" logicAnd )* ;
 
         return BinaryLikeExpr<Expr.Logical>(And, OR);
     }
 
     private Expr And()
     {
-        // logic_and → equality ( "and" equality )* ;
+        // logicAnd → equality ( "and" equality )* ;
 
         return BinaryLikeExpr<Expr.Logical>(Equality, AND);
     }
@@ -284,7 +232,9 @@ internal class Parser
         {
             if (Match(LEFT_PAREN))
             {
-                expr = FinishCall(expr);
+                List<Expr> args = Arguments();
+                Token paren = Consume(RIGHT_PAREN, "Expect ')' after arguments.");
+                expr = new Expr.Call(expr, paren, args);
             }
             else
             {
@@ -293,6 +243,13 @@ internal class Parser
         }
 
         return expr;
+    }
+
+    private List<Expr> Arguments()
+    {
+        // arguments → expression ( "," expression )* ;
+
+        return ItemList<Expr>("arguments", Expression);
     }
 
     private Expr Primary()
@@ -304,7 +261,7 @@ internal class Parser
 
         if (Match(FALSE)) { return new Expr.Literal(false); }
         if (Match(TRUE)) { return new Expr.Literal(true); }
-        if (Match(NIL)) { return Nil.GetLiteral(); }
+        if (Match(NIL)) { return Nil.Literal(); }
 
         if (Match(NUMBER, STRING))
         {
@@ -330,14 +287,40 @@ internal class Parser
     #region Statements
     private Stmt Declaration()
     {
-        // declaration → varDecl
+        // declaration → funcDecl
+        //             | varDecl
         //             | statement ;
 
-        if (Match(VAR))
-        {
-            return VarDeclaration();
-        }
+        if (Match(FUN)) { return Function("function"); } // funDecl → "fun" function ;
+        if (Match(VAR)) { return VarDeclaration(); }
         return Statement();
+    }
+
+    private Stmt Function(string kind)
+    {
+        // function → IDENTIFIER "(" parameters? ")" block ;
+
+        Token name = Consume(IDENTIFIER, $"Expect {kind} name.");
+        Consume(LEFT_PAREN, $"Expect '(' after {kind} name.");
+
+        List<Token> parameters = new();
+        if (!Check(RIGHT_PAREN))
+        {
+            parameters = Parameters();
+        }
+        Consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        Consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        List<Stmt> body = Block();
+
+        return new Stmt.Function(name, parameters, body);
+    }
+
+    private List<Token> Parameters()
+    {
+        // parameters → IDENTIFIER ( "," IDENTIFIER )* ;
+
+        return ItemList<Token>("parameters", () => Consume(IDENTIFIER, "Expect parameter name."));
     }
 
     private Stmt VarDeclaration()
@@ -353,7 +336,7 @@ internal class Parser
         }
         else
         {
-            initializer = Nil.GetLiteral();
+            initializer = Nil.Literal();
         }
 
         Consume(SEMICOLON, "Expect ';' after variable declaration.");
@@ -504,6 +487,70 @@ internal class Parser
 
         Consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
+    }
+    #endregion
+
+    #region Generic helpers
+    /// <summary>
+    /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
+    /// <see cref="Expr.Logical"/>.
+    /// </summary>
+    /// <typeparam name="TExpr">The concrete type to parse.</typeparam>
+    /// <param name="operand">
+    /// A delegate that parses expressions of higher precedence than that specified by the given
+    /// operators.
+    /// </param>
+    /// <param name="operators">
+    /// The operators that are allowed to participate in this binary-like expression.
+    /// </param>
+    /// <returns>An expression.</returns>
+    private Expr BinaryLikeExpr<TExpr>(
+        BinaryLikeExprOperand operand, params TokenType[] operators) where TExpr : Expr
+    {
+        // binaryLikeExpr → operand ( operators[x] operand )* ;
+
+        // parse expressions of higher precedence
+        Expr expr = operand();
+
+        // consume operators at the current precedence level
+        while (Match(operators))
+        {
+            Token @operator = Previous();
+            Expr right = operand();
+            // new expression is left-associative
+            expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, @operator, right)!;
+        }
+
+        return expr;
+    }
+
+    /// <summary>
+    /// Parses a comma-separated list of items, i.e. <see cref="Stmt.Function.Params"/> or
+    /// <see cref="Expr.Call.Arguments"/>.
+    /// </summary>
+    /// <typeparam name="TItem">The type of items.</typeparam>
+    /// <param name="kind">The name of the collection of items.</param>
+    /// <param name="consumer">A delegate that knows how to parse an item.</param>
+    /// <returns>A list of items.</returns>
+    private List<TItem> ItemList<TItem>(string kind, ListItemConsumer<TItem> consumer)
+    {
+        // itemsList → item ( "," item )* ;
+
+        List<TItem> items = new();
+    
+        if (!Check(RIGHT_PAREN))
+        {
+            do
+            {
+                if (items.Count > 255)
+                {
+                    Error(Peek(), $"Can't have more than 255 {kind}.");
+                }
+                items.Add(consumer());
+            } while (Match(COMMA));
+        }
+
+        return items;
     }
     #endregion
 }

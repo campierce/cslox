@@ -43,6 +43,7 @@ public class AstGenerator
             {
                 "Block      : List<Stmt> statements",
                 "Expression : Expr innerExpression",
+                $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr content",
                 "Var        : Token name, Expr initializer",

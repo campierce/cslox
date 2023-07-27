@@ -13,6 +13,8 @@ internal abstract class Stmt
 
         T VisitExpressionStmt(Expression stmt);
 
+        T VisitFunctionStmt(Function stmt);
+
         T VisitIfStmt(If stmt);
 
         T VisitPrintStmt(Print stmt);
@@ -49,6 +51,25 @@ internal abstract class Stmt
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitExpressionStmt(this);
+        }
+    }
+
+    internal class Function : Stmt
+    {
+        public Token Name { get; }
+        public List<Token> Params { get; }
+        public List<Stmt> Body { get; }
+
+        public Function(Token name, List<Token> @params, List<Stmt> body)
+        {
+            Name = name;
+            Params = @params;
+            Body = body;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitFunctionStmt(this);
         }
     }
 

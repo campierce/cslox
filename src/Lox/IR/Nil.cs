@@ -18,7 +18,7 @@ internal class Nil
     {
     }
 
-    public static Expr.Literal GetLiteral()
+    public static Expr.Literal Literal()
     {
         return new Expr.Literal(Nil.Instance);
     }

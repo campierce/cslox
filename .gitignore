@@ -1,14 +1,12 @@
-# .NET build and runtime artifacts
+# dotnet
 bin/
 obj/
-out/
-*.userprefs
-*.suo
-*.cache
-*.bak
 
-# VS Code
+# vs code
 .vscode/
 
-# macOS
+# mac os
 .DS_Store
+
+# mine
+/notes.txt

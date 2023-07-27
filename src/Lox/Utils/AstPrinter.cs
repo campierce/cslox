@@ -71,6 +71,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
         return Parenthesize(";", stmt.InnerExpression);
     }
 
+    public string VisitFunctionStmt(Stmt.Function stmt)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitIfStmt(Stmt.If stmt)
     {
         if (stmt.ElseBranch is null)
