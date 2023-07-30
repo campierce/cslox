@@ -73,7 +73,14 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 
     public string VisitFunctionStmt(Stmt.Function stmt)
     {
-        throw new NotImplementedException();
+        return Parenthesize(
+            "fun",
+            stmt.Name.Lexeme,
+            "(",
+            stmt.Params,
+            ")",
+            stmt.Body
+        );
     }
 
     public string VisitIfStmt(Stmt.If stmt)
@@ -120,6 +127,9 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
                     break;
                 case Stmt stmt:
                     sb.Append(Print(stmt));
+                    break;
+                case List<Token> tokenList:
+                    Transform(sb, tokenList.ToArray());
                     break;
                 case List<Expr> exprList:
                     Transform(sb, exprList.ToArray());

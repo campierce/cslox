@@ -261,7 +261,7 @@ internal class Parser
 
         if (Match(FALSE)) { return new Expr.Literal(false); }
         if (Match(TRUE)) { return new Expr.Literal(true); }
-        if (Match(NIL)) { return Nil.Literal(); }
+        if (Match(NIL)) { return Nil.Literal; }
 
         if (Match(NUMBER, STRING))
         {
@@ -336,7 +336,7 @@ internal class Parser
         }
         else
         {
-            initializer = Nil.Literal();
+            initializer = Nil.Literal;
         }
 
         Consume(SEMICOLON, "Expect ';' after variable declaration.");

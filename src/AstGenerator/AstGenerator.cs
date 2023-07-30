@@ -8,7 +8,6 @@ public class AstGenerator
     /// </summary>
     private const char escapePrefix = '@';
 
-    // {dir_with_assembly} > ./generate_ast ~/code/cslox/src/Lox/IR
     public static void Main(string[] args)
     {
         if (args.Length != 1)
@@ -16,7 +15,13 @@ public class AstGenerator
             Console.Error.WriteLine("Usage: generate_ast <output directory>");
             Environment.Exit(64);
         }
+        
         string outputDir = args[0];
+        if (!Directory.Exists(outputDir))
+        {
+            Console.Error.WriteLine("Directory does not exist.");
+            Environment.Exit(64);
+        }
 
         // define expression types
         DefineAst(

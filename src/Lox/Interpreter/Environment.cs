@@ -13,7 +13,7 @@ internal class Environment
     /// <summary>
     /// The enclosing environment, if applicable.
     /// </summary>
-    public Environment? Enclosing { get; }
+    private Environment? Enclosing { get; }
     #endregion
 
     #region Constructors

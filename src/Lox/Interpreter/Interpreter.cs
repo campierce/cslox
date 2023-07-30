@@ -7,20 +7,20 @@ namespace Lox.Interpreting;
 
 internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 {
-    #region Fields
-    private readonly Environment _globals;
-
+    #region Fields/Properties
     private Environment _environment;
+    
+    public Environment Globals { get; }
     #endregion
 
     #region Constructors
     public Interpreter()
     {
-        _globals = new Environment();
-        _environment = _globals;
+        Globals = new Environment();
+        _environment = Globals;
 
         // define native functions
-        _globals.Define("clock", new Clock());
+        Globals.Define("clock", new Clock());
     }
     #endregion
 
@@ -183,7 +183,9 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        throw new NotImplementedException();
+        CallableFunction function = new CallableFunction(stmt);
+        _environment.Define(stmt.Name.Lexeme, function);
+        return default(Void);
     }
 
     public Void VisitIfStmt(Stmt.If stmt)
@@ -234,8 +236,9 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         stmt.Accept(this);
     }
 
-    private void ExecuteBlock(List<Stmt> statements, Environment environment)
+    public void ExecuteBlock(List<Stmt> statements, Environment environment)
     {
+        Environment previous = _environment;
         _environment = environment;
         try
         {
@@ -246,7 +249,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         }
         finally
         {
-            _environment = _environment.Enclosing!; // discard this block's scope
+            _environment = previous; // discard this block's scope
         }
     }
     #endregion
@@ -254,7 +257,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     #region Static helpers
     private static bool IsTruthy(object obj)
     {
-        // nil and false are falsey, everything else is truthy
+        // nil and false are falsey, everything else is truthy (like Ruby)
         #pragma warning disable format
         return obj switch
         {
@@ -289,24 +292,14 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         throw new RuntimeError(@operator, "Operands must be numbers.");
     }
 
-    private static string Stringify(object obj)
+    private static string? Stringify(object obj)
     {
-        if (obj is double num)
-        {
-            string text = num.ToString();
-            if (text.EndsWith(".0"))
-            {
-                text = text[..^2];
-            }
-            return text;
-        }
-
-        if (obj is bool b)
+        if (obj is bool b) // C# wants to capitalize this, but Lox does not
         {
             return b.ToString().ToLower();
         }
 
-        return obj.ToString() ?? string.Empty;
+        return obj.ToString();
     }
     #endregion
 }

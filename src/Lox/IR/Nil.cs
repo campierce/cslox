@@ -18,10 +18,7 @@ internal class Nil
     {
     }
 
-    public static Expr.Literal Literal()
-    {
-        return new Expr.Literal(Nil.Instance);
-    }
+    public static Expr.Literal Literal => new Expr.Literal(Nil.Instance);
 
     public override string ToString() => "nil";
 }

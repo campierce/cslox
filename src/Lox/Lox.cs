@@ -1,3 +1,4 @@
+using System.CommandLine;
 using System.Text;
 using Lox.Interpreting;
 using Lox.IR;
@@ -12,22 +13,41 @@ public class Lox
     private static readonly Interpreter interpreter = new();
     private static bool _hadError = false;
     private static bool _hadRuntimeError = false;
+    private static bool _isPrintMode;
 
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        if (args.Length > 1)
+        RootCommand rootCommand = new("Interpreter for the Lox programming language.");
+
+        Argument<string> scriptArgument = new(
+            "script",
+            "Script to run; if omitted, enter interactive mode.")
         {
-            Console.Error.WriteLine("Usage: cslox [script]");
-            System.Environment.Exit(64);
-        }
-        else if (args.Length == 1)
-        {
-            RunFile(args[0]);
-        }
-        else
-        {
-            RunPrompt();
-        }
+            Arity = ArgumentArity.ZeroOrOne
+        };
+        Option<bool> debugOption = new(
+            new string[] { "-p", "--print" },
+            "Print the syntax tree instead of executing it.");
+
+        rootCommand.AddArgument(scriptArgument);
+        rootCommand.AddOption(debugOption);
+
+        rootCommand.SetHandler((debug, script) =>
+            {
+                _isPrintMode = debug;
+                if (!string.IsNullOrEmpty(script))
+                {
+                    RunFile(script);
+                }
+                else
+                {
+                    RunPrompt();
+                }
+            },
+            debugOption,
+            scriptArgument);
+
+        await rootCommand.InvokeAsync(args);
     }
 
     private static void RunFile(string path)
@@ -66,13 +86,15 @@ public class Lox
 
         if (_hadError) { return; }
 
-        /*
-        AstPrinter printer = new();
-        foreach (Stmt statement in statements)
+        if (_isPrintMode)
         {
-            Console.WriteLine(printer.Print(statement));
+            AstPrinter printer = new();
+            foreach (Stmt statement in statements)
+            {
+                Console.WriteLine(printer.Print(statement));
+            }
+            return;
         }
-        */
 
         interpreter.Interpret(statements);
     }
