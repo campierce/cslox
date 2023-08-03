@@ -51,6 +51,7 @@ public class AstGenerator
                 $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr content",
+                "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
                 "While      : Expr condition, Stmt body"
             }

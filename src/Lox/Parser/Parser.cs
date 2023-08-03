@@ -348,6 +348,7 @@ internal class Parser
         // statement → forStmt
         //           | ifStmt
         //           | printStmt
+        //           | returnStmt
         //           | whileStmt
         //           | block
         //           | exprStmt ;
@@ -355,6 +356,7 @@ internal class Parser
         if (Match(FOR)) { return ForStatement(); }
         if (Match(IF)) { return IfStatement(); }
         if (Match(PRINT)) { return PrintStatement(); }
+        if (Match(RETURN)) {return ReturnStatement(); }
         if (Match(WHILE)) { return WhileStatement(); }
         if (Match(LEFT_BRACE)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
@@ -452,6 +454,26 @@ internal class Parser
         Expr value = Expression();
         Consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    private Stmt ReturnStatement()
+    {
+        // returnStmt → "return" expression? ";" ;
+
+        Token keyword = Previous();
+        
+        Expr value;
+        if (!Check(SEMICOLON))
+        {
+            value = Expression();
+        }
+        else
+        {
+            value = Nil.Literal;
+        }
+
+        Consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     private Stmt WhileStatement()

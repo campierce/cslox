@@ -208,6 +208,12 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         return default(Void);
     }
 
+    public Void VisitReturnStmt(Stmt.Return stmt)
+    {
+        object value = Evaluate(stmt.Value);
+        throw new Return(value);
+    }
+
     public Void VisitVarStmt(Stmt.Var stmt)
     {
         object value = Evaluate(stmt.Initializer);

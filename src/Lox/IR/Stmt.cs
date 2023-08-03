@@ -19,6 +19,8 @@ internal abstract class Stmt
 
         T VisitPrintStmt(Print stmt);
 
+        T VisitReturnStmt(Return stmt);
+
         T VisitVarStmt(Var stmt);
 
         T VisitWhileStmt(While stmt);
@@ -104,6 +106,23 @@ internal abstract class Stmt
         public override T Accept<T>(Visitor<T> visitor)
         {
             return visitor.VisitPrintStmt(this);
+        }
+    }
+
+    internal class Return : Stmt
+    {
+        public Token Keyword { get; }
+        public Expr Value { get; }
+
+        public Return(Token keyword, Expr value)
+        {
+            Keyword = keyword;
+            Value = value;
+        }
+
+        public override T Accept<T>(Visitor<T> visitor)
+        {
+            return visitor.VisitReturnStmt(this);
         }
     }
 

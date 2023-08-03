@@ -21,8 +21,15 @@ internal class CallableFunction : ICallable
             // bind the parameter to its argument
             environment.Define(_declaration.Params[i].Lexeme, arguments[i]);
         }
-        interpreter.ExecuteBlock(_declaration.Body, environment);
-        return Nil.Literal;
+        try
+        {
+            interpreter.ExecuteBlock(_declaration.Body, environment);
+        }
+        catch (Return returnValue)
+        {
+            return returnValue.Value;
+        }
+        return Nil.Instance;
     }
 
     public override string ToString() => $"<fn {_declaration.Name.Lexeme}>";

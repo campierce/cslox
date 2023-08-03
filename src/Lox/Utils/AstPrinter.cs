@@ -73,14 +73,7 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 
     public string VisitFunctionStmt(Stmt.Function stmt)
     {
-        return Parenthesize(
-            "fun",
-            stmt.Name.Lexeme,
-            "(",
-            stmt.Params,
-            ")",
-            stmt.Body
-        );
+        return Parenthesize("fun", stmt.Name.Lexeme, "(", stmt.Params, ")", stmt.Body);
     }
 
     public string VisitIfStmt(Stmt.If stmt)
@@ -98,6 +91,11 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     public string VisitPrintStmt(Stmt.Print stmt)
     {
         return Parenthesize("print", stmt.Content);
+    }
+
+    public string VisitReturnStmt(Stmt.Return stmt)
+    {
+        return Parenthesize("return", stmt.Value);
     }
 
     public string VisitVarStmt(Stmt.Var stmt)
