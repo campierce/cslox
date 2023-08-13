@@ -25,6 +25,7 @@ public class Lox
         {
             Arity = ArgumentArity.ZeroOrOne
         };
+
         Option<bool> debugOption = new(
             new string[] { "-p", "--print" },
             "Print the syntax tree instead of executing it.");

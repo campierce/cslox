@@ -90,7 +90,7 @@ internal class Parser
         return false;
     }
 
-    private ParseError Error(Token token, String message)
+    private static ParseError Error(Token token, String message)
     {
         Lox.Error(token, message);
         return new ParseError();
@@ -410,10 +410,7 @@ internal class Parser
         }
 
         // make sure there's a condition
-        if (condition is null)
-        {
-            condition = new Expr.Literal(true);
-        }
+        condition ??= new Expr.Literal(true);
 
         // create the loop
         body = new Stmt.While(condition, body);

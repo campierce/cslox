@@ -5,9 +5,9 @@ namespace Lox.IR;
 // Generated code; see AstGenerator to make changes.
 internal abstract class Stmt
 {
-    public abstract T Accept<T>(Visitor<T> visitor);
+    public abstract T Accept<T>(IVisitor<T> visitor);
 
-    internal interface Visitor<T>
+    internal interface IVisitor<T>
     {
         T VisitBlockStmt(Block stmt);
 
@@ -35,7 +35,7 @@ internal abstract class Stmt
             Statements = statements;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitBlockStmt(this);
         }
@@ -50,7 +50,7 @@ internal abstract class Stmt
             InnerExpression = innerExpression;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitExpressionStmt(this);
         }
@@ -69,7 +69,7 @@ internal abstract class Stmt
             Body = body;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitFunctionStmt(this);
         }
@@ -88,7 +88,7 @@ internal abstract class Stmt
             ElseBranch = elseBranch;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitIfStmt(this);
         }
@@ -103,7 +103,7 @@ internal abstract class Stmt
             Content = content;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitPrintStmt(this);
         }
@@ -120,7 +120,7 @@ internal abstract class Stmt
             Value = value;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitReturnStmt(this);
         }
@@ -137,7 +137,7 @@ internal abstract class Stmt
             Initializer = initializer;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitVarStmt(this);
         }
@@ -154,7 +154,7 @@ internal abstract class Stmt
             Body = body;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitWhileStmt(this);
         }

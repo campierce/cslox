@@ -4,7 +4,7 @@ using Lox.Scanning;
 
 namespace Lox;
 
-internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
+internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 {
     #region API
     public string Print(Expr expr)
@@ -114,7 +114,7 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
     {
         foreach (object part in parts)
         {
-            sb.Append(" ");
+            sb.Append(' ');
             switch (part)
             {
                 case Token token:
@@ -148,7 +148,7 @@ internal class AstPrinter : Expr.Visitor<string>, Stmt.Visitor<string>
 
         sb.Append($"({label}");
         Transform(sb, parts);
-        sb.Append(")");
+        sb.Append(')');
 
         return sb.ToString();
     }

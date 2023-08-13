@@ -33,7 +33,7 @@ public class AstGenerator
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Call     : Expr callee, Token paren, List<Expr> arguments",
                 "Grouping : Expr expression",
-                "Literal  : Object value",
+                "Literal  : object value",
                 $"Logical : Expr left, Token {escapePrefix}operator, Expr right",
                 $"Unary   : Token {escapePrefix}operator, Expr right",
                 "Variable : Token name"
@@ -76,7 +76,7 @@ public class AstGenerator
         sb.Indent();
 
         // abstract methods
-        sb.AppendLine("public abstract T Accept<T>(Visitor<T> visitor);");
+        sb.AppendLine("public abstract T Accept<T>(IVisitor<T> visitor);");
         sb.AppendLine();
 
         // visitor interface
@@ -134,7 +134,7 @@ public class AstGenerator
         sb.AppendLine();
 
         // implementations
-        sb.AppendLine("public override T Accept<T>(Visitor<T> visitor)");
+        sb.AppendLine("public override T Accept<T>(IVisitor<T> visitor)");
         sb.AppendLine("{");
         sb.Indent();
         sb.AppendLine($"return visitor.Visit{className}{baseName}(this);");
@@ -151,7 +151,7 @@ public class AstGenerator
         IndentableStringBuilder sb, string baseName, List<string> types)
     {
         // nested interface
-        sb.AppendLine("internal interface Visitor<T>");
+        sb.AppendLine("internal interface IVisitor<T>");
         sb.AppendLine("{");
         sb.Indent();
 

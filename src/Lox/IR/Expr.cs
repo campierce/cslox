@@ -5,9 +5,9 @@ namespace Lox.IR;
 // Generated code; see AstGenerator to make changes.
 internal abstract class Expr
 {
-    public abstract T Accept<T>(Visitor<T> visitor);
+    public abstract T Accept<T>(IVisitor<T> visitor);
 
-    internal interface Visitor<T>
+    internal interface IVisitor<T>
     {
         T VisitAssignExpr(Assign expr);
 
@@ -37,7 +37,7 @@ internal abstract class Expr
             Value = value;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitAssignExpr(this);
         }
@@ -56,7 +56,7 @@ internal abstract class Expr
             Right = right;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitBinaryExpr(this);
         }
@@ -75,7 +75,7 @@ internal abstract class Expr
             Arguments = arguments;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitCallExpr(this);
         }
@@ -90,7 +90,7 @@ internal abstract class Expr
             Expression = expression;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitGroupingExpr(this);
         }
@@ -98,14 +98,14 @@ internal abstract class Expr
 
     internal class Literal : Expr
     {
-        public Object Value { get; }
+        public object Value { get; }
 
-        public Literal(Object value)
+        public Literal(object value)
         {
             Value = value;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitLiteralExpr(this);
         }
@@ -124,7 +124,7 @@ internal abstract class Expr
             Right = right;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitLogicalExpr(this);
         }
@@ -141,7 +141,7 @@ internal abstract class Expr
             Right = right;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitUnaryExpr(this);
         }
@@ -156,7 +156,7 @@ internal abstract class Expr
             Name = name;
         }
 
-        public override T Accept<T>(Visitor<T> visitor)
+        public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitVariableExpr(this);
         }

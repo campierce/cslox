@@ -5,11 +5,11 @@ using Void = Lox.IR.Void;
 
 namespace Lox.Interpreting;
 
-internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
+internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
     #region Fields/Properties
     private Environment _environment;
-    
+
     public Environment Globals { get; }
     #endregion
 
@@ -56,13 +56,13 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
 
         if (expr.Operator.Type == PLUS)
         {
-            if (left is double && right is double)
+            if (left is double v && right is double v1)
             {
-                return (double)left + (double)right;
+                return v + v1;
             }
-            if (left is string && right is string)
+            if (left is string v2 && right is string v3)
             {
-                return (string)left + (string)right;
+                return v2 + v3;
             }
             throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
         }
@@ -172,20 +172,20 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     public Void VisitBlockStmt(Stmt.Block stmt)
     {
         ExecuteBlock(stmt.Statements, new Environment(_environment));
-        return default(Void);
+        return default;
     }
 
     public Void VisitExpressionStmt(Stmt.Expression stmt)
     {
         Evaluate(stmt.InnerExpression);
-        return default(Void);
+        return default;
     }
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        CallableFunction function = new CallableFunction(stmt);
+        CallableFunction function = new(stmt);
         _environment.Define(stmt.Name.Lexeme, function);
-        return default(Void);
+        return default;
     }
 
     public Void VisitIfStmt(Stmt.If stmt)
@@ -198,14 +198,14 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         {
             Execute(stmt.ElseBranch);
         }
-        return default(Void);
+        return default;
     }
 
     public Void VisitPrintStmt(Stmt.Print stmt)
     {
         object value = Evaluate(stmt.Content);
         Console.WriteLine(Stringify(value));
-        return default(Void);
+        return default;
     }
 
     public Void VisitReturnStmt(Stmt.Return stmt)
@@ -218,7 +218,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
     {
         object value = Evaluate(stmt.Initializer);
         _environment.Define(stmt.Name.Lexeme, value);
-        return default(Void);
+        return default;
     }
 
     public Void VisitWhileStmt(Stmt.While stmt)
@@ -227,7 +227,7 @@ internal class Interpreter : Expr.Visitor<object>, Stmt.Visitor<Void>
         {
             Execute(stmt.Body);
         }
-        return default(Void);
+        return default;
     }
     #endregion
 

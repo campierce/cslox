@@ -15,7 +15,7 @@ internal class CallableFunction : ICallable
 
     public object Call(Interpreter interpreter, List<object> arguments)
     {
-        Environment environment = new Environment(interpreter.Globals);
+        Environment environment = new(interpreter.Globals);
         for (int i = 0; i < _declaration.Params.Count; i++)
         {
             // bind the parameter to its argument
