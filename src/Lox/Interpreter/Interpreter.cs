@@ -183,7 +183,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        CallableFunction function = new(stmt);
+        CallableFunction function = new(stmt, _environment);
         _environment.Define(stmt.Name.Lexeme, function);
         return default;
     }

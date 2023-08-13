@@ -5,22 +5,29 @@ namespace Lox.Interpreting;
 internal class CallableFunction : ICallable
 {
     private readonly Stmt.Function _declaration;
-    
+
+    private readonly Environment _closure;
+
     public int Arity => _declaration.Params.Count;
 
-    public CallableFunction(Stmt.Function declaration)
+    public CallableFunction(Stmt.Function declaration, Environment closure)
     {
         _declaration = declaration;
+        _closure = closure;
     }
 
     public object Call(Interpreter interpreter, List<object> arguments)
     {
-        Environment environment = new(interpreter.Globals);
+        // create block scope
+        Environment environment = new(_closure);
+
+        // bind parameters to their arguments
         for (int i = 0; i < _declaration.Params.Count; i++)
         {
-            // bind the parameter to its argument
             environment.Define(_declaration.Params[i].Lexeme, arguments[i]);
         }
+        
+        // execute the function body
         try
         {
             interpreter.ExecuteBlock(_declaration.Body, environment);
@@ -29,6 +36,8 @@ internal class CallableFunction : ICallable
         {
             return returnValue.Value;
         }
+        
+        // if there was no explicit return, use nil
         return Nil.Instance;
     }
 
