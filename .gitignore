@@ -8,8 +8,8 @@ obj/
 # mac os
 .DS_Store
 
-# mine
-/notes.txt
+# test scripts
+/*.lox
 
 # published exe, for now
 /cslox

@@ -1,6 +1,5 @@
 using Lox.IR;
-using Lox.Scanning;
-using static Lox.Scanning.TokenType;
+using static Lox.TokenType;
 
 namespace Lox.Parsing;
 
@@ -37,9 +36,9 @@ internal class Parser
             {
                 statements.Add(Declaration());
             }
-            catch (ParseError)
+            catch (ParsingError)
             {
-                // parse error means we won't try to interpret the statements
+                // parsing error means we won't try to interpret the statements
                 // but we should recover and keep parsing, to see what else we find
                 Synchronize();
             }
@@ -90,13 +89,7 @@ internal class Parser
         return false;
     }
 
-    private static ParseError Error(Token token, String message)
-    {
-        Lox.Error(token, message);
-        return new ParseError();
-    }
-
-    private Token Consume(TokenType type, String message)
+    private Token Consume(TokenType type, string message)
     {
         if (Check(type))
         {
@@ -356,7 +349,7 @@ internal class Parser
         if (Match(FOR)) { return ForStatement(); }
         if (Match(IF)) { return IfStatement(); }
         if (Match(PRINT)) { return PrintStatement(); }
-        if (Match(RETURN)) {return ReturnStatement(); }
+        if (Match(RETURN)) { return ReturnStatement(); }
         if (Match(WHILE)) { return WhileStatement(); }
         if (Match(LEFT_BRACE)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
@@ -458,7 +451,7 @@ internal class Parser
         // returnStmt → "return" expression? ";" ;
 
         Token keyword = Previous();
-        
+
         Expr value;
         if (!Check(SEMICOLON))
         {
@@ -509,7 +502,14 @@ internal class Parser
     }
     #endregion
 
-    #region Generic helpers
+    #region Helpers
+    private static ParsingError Error(Token token, string message)
+    {
+        ParsingError error = new(token, message);
+        Lox.Error(error);
+        return error;
+    }
+
     /// <summary>
     /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
     /// <see cref="Expr.Logical"/>.
@@ -556,7 +556,7 @@ internal class Parser
         // itemsList → item ( "," item )* ;
 
         List<TItem> items = new();
-    
+
         if (!Check(RIGHT_PAREN))
         {
             do

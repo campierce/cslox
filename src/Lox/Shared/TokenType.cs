@@ -1,4 +1,4 @@
-namespace Lox.Scanning;
+namespace Lox;
 
 internal enum TokenType
 {

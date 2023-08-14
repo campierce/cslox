@@ -1,5 +1,5 @@
 using Lox.IR;
-using static Lox.Scanning.TokenType;
+using static Lox.TokenType;
 
 namespace Lox.Scanning;
 
@@ -29,11 +29,11 @@ internal class Scanner
     /// <summary>
     /// Length of the token under consideration.
     /// </summary>
-    private int CurrentLength => (_current - _start);
+    private int CurrentLength => _current - _start;
     /// <summary>
     /// Whether the scanner has reached the end of the source text.
     /// </summary>
-    private bool IsAtEnd => (_current >= _source.Length);
+    private bool IsAtEnd => _current >= _source.Length;
     /// <summary>
     /// Maps keyword literals to their token types.
     /// </summary>
@@ -65,7 +65,7 @@ internal class Scanner
     /// <param name="source">Source text.</param>
     public Scanner(string source)
     {
-        this._source = source;
+        _source = source;
     }
     #endregion
 
@@ -241,7 +241,7 @@ internal class Scanner
                 }
                 else
                 {
-                    Lox.Error(_line, "Unexpected character.");
+                    Error("Unexpected character.");
                 }
                 break;
         }
@@ -286,7 +286,7 @@ internal class Scanner
         // if we ran out of road, that's a problem
         if (IsAtEnd)
         {
-            Lox.Error(_line, "Unterminated string.");
+            Error("Unterminated string.");
             return;
         }
 
@@ -354,7 +354,16 @@ internal class Scanner
     }
     #endregion
 
-    #region Char-acterizers
+    #region Helpers
+    /// <summary>
+    /// Logs a scanning error.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    private void Error(string message)
+    {
+        Lox.Error(new ScanningError(_line, message));
+    }
+
     /// <summary>
     /// Decides whether a character is a digit. Supported: [0-9].
     /// </summary>

@@ -4,7 +4,6 @@ using Lox.Interpreting;
 using Lox.IR;
 using Lox.Parsing;
 using Lox.Scanning;
-using static Lox.Scanning.TokenType;
 
 namespace Lox;
 
@@ -35,14 +34,22 @@ public class Lox
 
         rootCommand.SetHandler((debug, script) =>
             {
-                _isPrintMode = debug;
-                if (!string.IsNullOrEmpty(script))
+                try
                 {
-                    RunFile(script);
+                    _isPrintMode = debug;
+                    if (!string.IsNullOrEmpty(script))
+                    {
+                        RunFile(script);
+                    }
+                    else
+                    {
+                        RunPrompt();
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    RunPrompt();
+                    Console.Error.WriteLine($"Unhandled error: {e}");
+                    _hadError = true;
                 }
             },
             debugOption,
@@ -53,8 +60,15 @@ public class Lox
 
     private static void RunFile(string path)
     {
-        byte[] bytes = File.ReadAllBytes(path);
-        Run(Encoding.Default.GetString(bytes));
+        try
+        {
+            string content = File.ReadAllText(path, Encoding.UTF8);
+            Run(content);
+        }
+        catch (Exception e)
+        {
+            Error(new ScanningError(e.Message));
+        }
 
         if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
         if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
@@ -100,32 +114,19 @@ public class Lox
         interpreter.Interpret(statements);
     }
 
-    private static void Report(int line, string where, string message)
+    internal static void Error(Error error)
     {
-        Console.Error.WriteLine($"[line {line}] Error{where}: {message}");
-        _hadError = true;
-    }
-
-    internal static void Error(int line, string message)
-    {
-        Report(line, string.Empty, message);
-    }
-
-    internal static void Error(Token token, string message)
-    {
-        if (token.Type == EOF)
+        if (error is RuntimeError)
         {
-            Report(token.Line, " at end", message);
+            _hadRuntimeError = true;
         }
         else
         {
-            Report(token.Line, " at '" + token.Lexeme + "'", message);
+            _hadError = true;
         }
-    }
 
-    internal static void RuntimeError(RuntimeError error)
-    {
-        Console.Error.WriteLine($"{error.Message}\n[line {error.Token.Line}]");
-        _hadRuntimeError = true;
+        Console.Error.WriteLine(
+            $"{error.Line}{error.Name} error{error.Where}: {error.Message}"
+        );
     }
 }

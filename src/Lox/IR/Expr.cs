@@ -1,5 +1,3 @@
-using Lox.Scanning;
-
 namespace Lox.IR;
 
 // Generated code; see AstGenerator to make changes.

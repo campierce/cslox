@@ -64,8 +64,6 @@ public class AstGenerator
         IndentableStringBuilder sb = new();
 
         // top of file
-        sb.AppendLine("using Lox.Scanning;");
-        sb.AppendLine();
         sb.AppendLine("namespace Lox.IR;");
         sb.AppendLine();
 

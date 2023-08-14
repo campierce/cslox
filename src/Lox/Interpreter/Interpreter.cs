@@ -1,6 +1,5 @@
 using Lox.IR;
-using Lox.Scanning;
-using static Lox.Scanning.TokenType;
+using static Lox.TokenType;
 using Void = Lox.IR.Void;
 
 namespace Lox.Interpreting;
@@ -10,17 +9,17 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #region Fields/Properties
     private Environment _environment;
 
-    public Environment Globals { get; }
+    private readonly Environment _globals;
     #endregion
 
     #region Constructors
     public Interpreter()
     {
-        Globals = new Environment();
-        _environment = Globals;
+        _globals = new Environment();
+        _environment = _globals;
 
         // define native functions
-        Globals.Define("clock", new Clock());
+        _globals.Define("clock", new Clock());
     }
     #endregion
 
@@ -36,7 +35,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
         catch (RuntimeError error)
         {
-            Lox.RuntimeError(error);
+            Lox.Error(error);
         }
     }
     #endregion

@@ -1,5 +1,3 @@
-using Lox.Scanning;
-
 namespace Lox.Interpreting;
 
 internal class Environment
@@ -13,7 +11,7 @@ internal class Environment
     /// <summary>
     /// The enclosing environment, if applicable.
     /// </summary>
-    private Environment? Enclosing { get; }
+    private readonly Environment? _enclosing;
     #endregion
 
     #region Constructors
@@ -22,7 +20,7 @@ internal class Environment
     /// </summary>
     public Environment()
     {
-        Enclosing = null;
+        _enclosing = null;
     }
 
     /// <summary>
@@ -31,7 +29,7 @@ internal class Environment
     /// <param name="enclosing">The enclosing Environment.</param>
     public Environment(Environment enclosing)
     {
-        Enclosing = enclosing;
+        _enclosing = enclosing;
     }
     #endregion
 
@@ -62,9 +60,9 @@ internal class Environment
         }
 
         // otherwise try the enclosing scope
-        if (Enclosing is not null)
+        if (_enclosing is not null)
         {
-            Enclosing.Assign(name, value);
+            _enclosing.Assign(name, value);
             return;
         }
 
@@ -86,9 +84,9 @@ internal class Environment
         }
 
         // otherwise try the enclosing scope
-        if (Enclosing is not null)
+        if (_enclosing is not null)
         {
-            return Enclosing.Get(name);
+            return _enclosing.Get(name);
         }
 
         throw new RuntimeError(name, $"Undefined variable '{name.Lexeme}'.");

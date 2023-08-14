@@ -1,13 +1,10 @@
-using Lox.Scanning;
-
 namespace Lox.Interpreting;
 
-internal class RuntimeError : Exception
+internal class RuntimeError : Error
 {
-    public readonly Token Token;
+    public override string Name => "Runtime";
 
-    public RuntimeError(Token token, string message) : base(message)
+    public RuntimeError(Token token, string message) : base(token, message)
     {
-        Token = token;
     }
 }

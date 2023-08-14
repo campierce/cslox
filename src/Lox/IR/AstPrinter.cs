@@ -1,6 +1,5 @@
 using System.Text;
 using Lox.IR;
-using Lox.Scanning;
 
 namespace Lox;
 
