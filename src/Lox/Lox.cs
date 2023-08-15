@@ -9,16 +9,19 @@ namespace Lox;
 
 public class Lox
 {
-    private static readonly Interpreter interpreter = new();
+    private static readonly Interpreter _interpreter = new();
+    
     private static bool _hadError = false;
+    
     private static bool _hadRuntimeError = false;
+    
     private static bool _isPrintMode;
 
     public static async Task Main(string[] args)
     {
         RootCommand rootCommand = new("Interpreter for the Lox programming language.");
 
-        Argument<string> scriptArgument = new(
+        Argument<string?> scriptArgument = new(
             "script",
             "Script to run; if omitted, enter interactive mode.")
         {
@@ -37,41 +40,25 @@ public class Lox
                 try
                 {
                     _isPrintMode = debug;
-                    if (!string.IsNullOrEmpty(script))
+                    if (script is null)
                     {
-                        RunFile(script);
+                        RunPrompt();
                     }
                     else
                     {
-                        RunPrompt();
+                        RunFile(script);
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.Error.WriteLine($"Unhandled error: {e}");
                     _hadError = true;
+                    Console.Error.WriteLine($"Unhandled error:{System.Environment.NewLine}{e}");
                 }
             },
             debugOption,
             scriptArgument);
 
         await rootCommand.InvokeAsync(args);
-    }
-
-    private static void RunFile(string path)
-    {
-        try
-        {
-            string content = File.ReadAllText(path, Encoding.UTF8);
-            Run(content);
-        }
-        catch (Exception e)
-        {
-            Error(new ScanningError(e.Message));
-        }
-
-        if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
-        if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
     }
 
     private static void RunPrompt()
@@ -89,6 +76,17 @@ public class Lox
             Run(line);
             _hadError = false;
         }
+    }
+
+    private static void RunFile(string path)
+    {
+        if (TryReadFile(path, out string content))
+        {
+            Run(content);
+        }
+
+        if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
+        if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
     }
 
     private static void Run(string source)
@@ -111,7 +109,22 @@ public class Lox
             return;
         }
 
-        interpreter.Interpret(statements);
+        _interpreter.Interpret(statements);
+    }
+
+    private static bool TryReadFile(string path, out string content)
+    {
+        content = string.Empty;
+        try
+        {
+            content = File.ReadAllText(path, Encoding.UTF8);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Error(new ScanningError(e.Message));
+            return false;
+        }
     }
 
     internal static void Error(Error error)
@@ -125,8 +138,6 @@ public class Lox
             _hadError = true;
         }
 
-        Console.Error.WriteLine(
-            $"{error.Line}{error.Name} error{error.Where}: {error.Message}"
-        );
+        Console.Error.WriteLine($"{error.Line}{error.Name} error{error.Where}: {error.Message}");
     }
 }

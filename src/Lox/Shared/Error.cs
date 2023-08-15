@@ -42,12 +42,12 @@ abstract internal class Error : Exception
     {
     }
 
-    public Error(int line, string message) : this(message)
+    public Error(int line, string message) : base(message)
     {
         _line = line;
     }
 
-    public Error(Token token, string message) : this(message)
+    public Error(Token token, string message) : base(message)
     {
         _line = token.Line;
         _token = token;
