@@ -1,14 +1,16 @@
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Text;
 using Lox.Interpreting;
 using Lox.IR;
-using Lox.Parsing;
 using Lox.Scanning;
+using Parser = Lox.Parsing.Parser;
 
 namespace Lox;
 
 public class Lox
 {
+    #region Fields
     private static readonly Interpreter _interpreter = new();
 
     private static bool _hadError = false;
@@ -16,6 +18,7 @@ public class Lox
     private static bool _hadRuntimeError = false;
 
     private static bool _isPrintMode;
+    #endregion
 
     public static async Task Main(string[] args)
     {
@@ -23,25 +26,7 @@ public class Lox
 
         Argument<FileInfo?> scriptArgument = new(
             name: "script",
-            parse: (result) =>
-                {
-                    if (result.Tokens.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    string? filePath = result.Tokens.Single().Value;
-                    if (!File.Exists(filePath))
-                    {
-                        result.ErrorMessage = "File does not exist";
-                    }
-                    else
-                    {
-                        return new FileInfo(filePath);
-                    }
-
-                    return null;
-                },
+            parse: GetFileFromArgument,
             isDefault: false,
             description: "Script to run; if omitted, enter interactive mode.")
         {
@@ -49,13 +34,13 @@ public class Lox
         };
 
         Option<bool> debugOption = new(
-            new string[] { "-p", "--print" },
-            "Print the syntax tree instead of executing it.");
+            aliases: new string[] { "-p", "--print" },
+            description: "Print the syntax tree instead of executing it.");
 
         rootCommand.AddArgument(scriptArgument);
         rootCommand.AddOption(debugOption);
 
-        rootCommand.SetHandler((debug, script) =>
+        rootCommand.SetHandler((script, debug) =>
             {
                 try
                 {
@@ -71,14 +56,48 @@ public class Lox
                 }
                 catch (Exception e)
                 {
-                    _hadError = true;
+                    _hadRuntimeError = true;
                     Console.Error.WriteLine($"Unhandled error:{System.Environment.NewLine}{e}");
                 }
             },
-            debugOption,
-            scriptArgument);
+            scriptArgument,
+            debugOption);
 
         await rootCommand.InvokeAsync(args);
+    }
+
+    #region API
+    internal static void Error(Error error)
+    {
+        if (error is RuntimeError)
+        {
+            _hadRuntimeError = true;
+        }
+        else
+        {
+            _hadError = true;
+        }
+
+        Console.Error.WriteLine($"{error.Line}{error.Name} error{error.Where}: {error.Message}");
+    }
+    #endregion
+
+    #region Helpers
+    private static FileInfo? GetFileFromArgument(ArgumentResult result)
+    {
+        if (result.Tokens.Count == 0)
+        {
+            return null;
+        }
+
+        string? path = result.Tokens.Single().Value;
+        if (!File.Exists(path))
+        {
+            result.ErrorMessage = $"File '{path}' does not exist";
+            return null;
+        }
+
+        return new FileInfo(path);
     }
 
     private static void RunPrompt()
@@ -128,18 +147,5 @@ public class Lox
 
         _interpreter.Interpret(statements);
     }
-
-    internal static void Error(Error error)
-    {
-        if (error is RuntimeError)
-        {
-            _hadRuntimeError = true;
-        }
-        else
-        {
-            _hadError = true;
-        }
-
-        Console.Error.WriteLine($"{error.Line}{error.Name} error{error.Where}: {error.Message}");
-    }
+    #endregion
 }
