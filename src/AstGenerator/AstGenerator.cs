@@ -1,4 +1,4 @@
-namespace Lox.Tools;
+﻿namespace Lox.Tools;
 
 public class AstGenerator
 {
@@ -12,7 +12,7 @@ public class AstGenerator
     {
         if (args.Length != 1)
         {
-            Console.Error.WriteLine("Usage: generate_ast <output directory>");
+            Console.Error.WriteLine("Usage: AstGenerator <output directory>");
             Environment.Exit(64);
         }
         
@@ -64,7 +64,7 @@ public class AstGenerator
         IndentableStringBuilder sb = new();
 
         // top of file
-        sb.AppendLine("namespace Lox.IR;");
+        sb.AppendLine("namespace Lox.AST;");
         sb.AppendLine();
 
         // abstract base class

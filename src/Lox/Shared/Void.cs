@@ -1,4 +1,4 @@
-namespace Lox.IR;
+namespace Lox;
 
 /// <summary>
 /// Boxed void.

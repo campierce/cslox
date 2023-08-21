@@ -1,16 +1,12 @@
+AST_DIR := src/Lox/AbstractSyntaxTree
 AST_PRJ := src/AstGenerator/AstGenerator.csproj
 FLAG    :=
-IR_DIR  := src/Lox/IR
 LOX_PRJ := src/Lox/Lox.csproj
 SLN     := cslox.sln
 
 .DEFAULT_GOAL = run
 
-.PHONY: ast-gen build clean publish run
-
-ast-gen:
-	@echo "Generating intermediate representation..."
-	@dotnet run --project $(AST_PRJ) -- $(IR_DIR)
+.PHONY: build clean publish run tree
 
 build:
 	@echo "Building solution..."
@@ -30,3 +26,7 @@ publish:
 
 run:
 	@dotnet run --project $(LOX_PRJ) -- $(FLAG)
+
+tree:
+	@echo "Generating abstract syntax tree..."
+	@dotnet run --project $(AST_PRJ) -- $(AST_DIR)

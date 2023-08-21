@@ -1,4 +1,4 @@
-using Lox.IR;
+using Lox.AST;
 
 namespace Lox.Interpreting;
 

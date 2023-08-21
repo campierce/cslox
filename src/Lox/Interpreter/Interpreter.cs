@@ -1,6 +1,5 @@
-using Lox.IR;
+using Lox.AST;
 using static Lox.TokenType;
-using Void = Lox.IR.Void;
 
 namespace Lox.Interpreting;
 

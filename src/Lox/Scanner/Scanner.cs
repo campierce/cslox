@@ -1,4 +1,3 @@
-using Lox.IR;
 using static Lox.TokenType;
 
 namespace Lox.Scanning;

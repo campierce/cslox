@@ -1,4 +1,4 @@
-using Lox.IR;
+using Lox.AST;
 using static Lox.TokenType;
 
 namespace Lox.Parsing;

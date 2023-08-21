@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text;
 using Lox.Interpreting;
-using Lox.IR;
+using Lox.AST;
 using Lox.Scanning;
 using Parser = Lox.Parsing.Parser;
 

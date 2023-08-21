@@ -1,4 +1,6 @@
-namespace Lox.IR;
+using Lox.AST;
+
+namespace Lox;
 
 /// <summary>
 /// Boxed null.

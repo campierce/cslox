@@ -32,7 +32,7 @@ public class IndentableStringBuilder
 
     public void Append(string value)
     {
-        _sb.Append(SpacePrefixed(value));
+        _sb.Append(value);
     }
 
     public void AppendLine(string value)

@@ -1,4 +1,4 @@
-namespace Lox.IR;
+namespace Lox.AST;
 
 // Generated code; see AstGenerator to make changes.
 internal abstract class Expr
