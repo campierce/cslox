@@ -70,6 +70,17 @@ internal class Environment
     }
 
     /// <summary>
+    /// Assigns a value to an existing variable, at the nth ancestor.
+    /// </summary>
+    /// <param name="distance">The ancestor number.</param>
+    /// <param name="name">The variable's name.</param>
+    /// <param name="value">The variable's value.</param>
+    public void AssignAt(int distance, Token name, object value)
+    {
+        Ancestor(distance)._values[name.Lexeme] = value;
+    }
+
+    /// <summary>
     /// Gets the value of a variable.
     /// </summary>
     /// <param name="name">The variable's name.</param>
@@ -90,6 +101,35 @@ internal class Environment
         }
 
         throw new RuntimeError(name, $"Undefined variable '{name.Lexeme}'.");
+    }
+
+    /// <summary>
+    /// Gets the value of a variable, at the nth ancestor.
+    /// </summary>
+    /// <param name="distance">The ancestor number.</param>
+    /// <param name="name">The variable's name.</param>
+    /// <returns>The variable's value.</returns>
+    public object GetAt(int distance, string name)
+    {
+        return Ancestor(distance)._values[name];
+    }
+    #endregion
+
+    #region Helpers
+    /// <summary>
+    /// Finds the nth ancestor of this environment.
+    /// </summary>
+    /// <param name="distance">The ancestor number.</param>
+    /// <returns>The nth ancestor.</returns>
+    private Environment Ancestor(int distance)
+    {
+        Environment environment = this;
+        for (int i = 0; i < distance; i++)
+        {
+            environment = environment._enclosing!;
+        }
+
+        return environment;
     }
     #endregion
 }

@@ -1,5 +1,4 @@
 using Lox.AST;
-using static Lox.TokenType;
 
 namespace Lox.Interpreting;
 
@@ -8,13 +7,14 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #region Fields/Properties
     private Environment _environment;
 
-    private readonly Environment _globals;
+    private readonly Environment _globals = new();
+
+    private readonly Dictionary<Expr, int> _locals = new();
     #endregion
 
     #region Constructors
     public Interpreter()
     {
-        _globals = new Environment();
         _environment = _globals;
 
         // define native functions
@@ -27,15 +27,31 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         try
         {
-            foreach (Stmt statement in statements)
-            {
-                Execute(statement);
-            }
+            statements.ForEach(Execute);
         }
         catch (RuntimeError error)
         {
             Lox.Error(error);
         }
+    }
+
+    public void ExecuteBlock(List<Stmt> statements, Environment environment)
+    {
+        Environment previous = _environment;
+        try
+        {
+            _environment = environment;
+            statements.ForEach(Execute);
+        }
+        finally
+        {
+            _environment = previous; // discard this block's scope
+        }
+    }
+
+    public void Resolve(Expr expr, int depth)
+    {
+        _locals[expr] = depth;
     }
     #endregion
 
@@ -43,7 +59,16 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     public object VisitAssignExpr(Expr.Assign expr)
     {
         object value = Evaluate(expr.Value);
-        _environment.Assign(expr.Name, value);
+
+        if (_locals.TryGetValue(expr, out int distance))
+        {
+            _environment.AssignAt(distance, expr.Name, value);
+        }
+        else
+        {
+            _globals.Assign(expr.Name, value);
+        }
+
         return value;
     }
 
@@ -52,7 +77,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         object left = Evaluate(expr.Left);
         object right = Evaluate(expr.Right);
 
-        if (expr.Operator.Type == PLUS)
+        if (expr.Operator.Type == TokenType.Plus)
         {
             if (left is double v && right is double v1)
             {
@@ -65,11 +90,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
         }
 
-        if (expr.Operator.Type == BANG_EQUAL)
+        if (expr.Operator.Type == TokenType.BangEqual)
         {
             return !IsEqual(left, right);
         }
-        if (expr.Operator.Type == EQUAL_EQUAL)
+        if (expr.Operator.Type == TokenType.EqualEqual)
         {
             return IsEqual(left, right);
         }
@@ -81,13 +106,13 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         #pragma warning disable format
         return expr.Operator.Type switch
         {
-            GREATER       => a > b,
-            GREATER_EQUAL => a >= b,
-            LESS          => a < b,
-            LESS_EQUAL    => a <= b,
-            MINUS         => a - b,
-            SLASH         => a / b,
-            STAR          => a * b,
+            TokenType.Greater      => a > b,
+            TokenType.GreaterEqual => a >= b,
+            TokenType.Less         => a < b,
+            TokenType.LessEqual    => a <= b,
+            TokenType.Minus        => a - b,
+            TokenType.Slash        => a / b,
+            TokenType.Star         => a * b,
             _ => new object() // unreachable
         };
         #pragma warning restore format
@@ -132,7 +157,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         object left = Evaluate(expr.Left);
 
         // attempt to short circuit
-        if (expr.Operator.Type == OR)
+        if (expr.Operator.Type == TokenType.Or)
         {
             if (IsTruthy(left)) { return left; }
         }
@@ -150,9 +175,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         switch (expr.Operator.Type)
         {
-            case BANG:
+            case TokenType.Bang:
                 return !IsTruthy(right);
-            case MINUS:
+            case TokenType.Minus:
                 CheckNumberOperand(expr.Operator, right);
                 return -(double)right;
         }
@@ -162,7 +187,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public object VisitVariableExpr(Expr.Variable expr)
     {
-        return _environment.Get(expr.Name);
+        return LookUpVariable(expr.Name, expr);
     }
     #endregion
 
@@ -181,7 +206,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        CallableFunction function = new(stmt, _environment);
+        LoxFunction function = new(stmt, _environment);
         _environment.Define(stmt.Name.Lexeme, function);
         return default;
     }
@@ -240,20 +265,15 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         stmt.Accept(this);
     }
 
-    public void ExecuteBlock(List<Stmt> statements, Environment environment)
+    private object LookUpVariable(Token name, Expr expr)
     {
-        Environment previous = _environment;
-        _environment = environment;
-        try
+        if (_locals.TryGetValue(expr, out int distance))
         {
-            foreach (Stmt statement in statements)
-            {
-                Execute(statement);
-            }
+            return _environment.GetAt(distance, name.Lexeme);
         }
-        finally
+        else
         {
-            _environment = previous; // discard this block's scope
+            return _globals.Get(name);
         }
     }
     #endregion

@@ -1,13 +1,11 @@
-using static Lox.TokenType;
-
 namespace Lox;
 
 abstract internal class Error : Exception
 {
     private readonly int? _line;
-    
+
     private readonly Token? _token;
-    
+
     abstract public string Name { get; }
 
     public string Line
@@ -21,14 +19,14 @@ abstract internal class Error : Exception
             return string.Empty;
         }
     }
-    
+
     public string Where
     {
         get
         {
             if (_token is not null)
             {
-                if (_token.Type == EOF)
+                if (_token.Type == TokenType.EOF)
                 {
                     return " at end";
                 }

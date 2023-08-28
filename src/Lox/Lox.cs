@@ -1,9 +1,10 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text;
-using Lox.Interpreting;
 using Lox.AST;
+using Lox.Interpreting;
 using Lox.Scanning;
+using Lox.StaticAnalysis;
 using Parser = Lox.Parsing.Parser;
 
 namespace Lox;
@@ -132,6 +133,11 @@ public class Lox
 
         Parser parser = new(tokens);
         List<Stmt> statements = parser.Parse();
+
+        if (_hadError) { return; }
+
+        Resolver resolver = new(_interpreter);
+        resolver.Resolve(statements);
 
         if (_hadError) { return; }
 

@@ -2,7 +2,7 @@ using Lox.AST;
 
 namespace Lox.Interpreting;
 
-internal class CallableFunction : ICallable
+internal class LoxFunction : ICallable
 {
     private readonly Stmt.Function _declaration;
 
@@ -10,7 +10,7 @@ internal class CallableFunction : ICallable
 
     public int Arity => _declaration.Params.Count;
 
-    public CallableFunction(Stmt.Function declaration, Environment closure)
+    public LoxFunction(Stmt.Function declaration, Environment closure)
     {
         _declaration = declaration;
         _closure = closure;
@@ -26,7 +26,7 @@ internal class CallableFunction : ICallable
         {
             environment.Define(_declaration.Params[i].Lexeme, arguments[i]);
         }
-        
+
         // execute the function body
         try
         {
@@ -36,7 +36,7 @@ internal class CallableFunction : ICallable
         {
             return returnValue.Value;
         }
-        
+
         // if there was no explicit return, use nil
         return Nil.Instance;
     }

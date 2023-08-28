@@ -15,7 +15,7 @@ public class AstGenerator
             Console.Error.WriteLine("Usage: AstGenerator <output directory>");
             Environment.Exit(64);
         }
-        
+
         string outputDir = args[0];
         if (!Directory.Exists(outputDir))
         {

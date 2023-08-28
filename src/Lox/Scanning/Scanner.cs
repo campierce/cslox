@@ -1,5 +1,3 @@
-using static Lox.TokenType;
-
 namespace Lox.Scanning;
 
 internal class Scanner
@@ -38,22 +36,24 @@ internal class Scanner
     /// </summary>
     private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
-        ["and"] = AND,
-        ["class"] = CLASS,
-        ["else"] = ELSE,
-        ["false"] = FALSE,
-        ["for"] = FOR,
-        ["fun"] = FUN,
-        ["if"] = IF,
-        ["nil"] = NIL,
-        ["or"] = OR,
-        ["print"] = PRINT,
-        ["return"] = RETURN,
-        ["super"] = SUPER,
-        ["this"] = THIS,
-        ["true"] = TRUE,
-        ["var"] = VAR,
-        ["while"] = WHILE
+        #pragma warning disable format
+        ["and"]    = TokenType.And,
+        ["class"]  = TokenType.Class,
+        ["else"]   = TokenType.Else,
+        ["false"]  = TokenType.False,
+        ["for"]    = TokenType.For,
+        ["fun"]    = TokenType.Fun,
+        ["if"]     = TokenType.If,
+        ["nil"]    = TokenType.Nil,
+        ["or"]     = TokenType.Or,
+        ["print"]  = TokenType.Print,
+        ["return"] = TokenType.Return,
+        ["super"]  = TokenType.Super,
+        ["this"]   = TokenType.This,
+        ["true"]   = TokenType.True,
+        ["var"]    = TokenType.Var,
+        ["while"]  = TokenType.While
+        #pragma warning restore format
     };
     #endregion
 
@@ -80,7 +80,7 @@ internal class Scanner
             _start = _current;
             ScanToken();
         }
-        _tokens.Add(new Token(EOF, string.Empty, Nil.Instance, _line));
+        _tokens.Add(new Token(TokenType.EOF, string.Empty, Nil.Instance, _line));
         return _tokens;
     }
     #endregion
@@ -168,50 +168,50 @@ internal class Scanner
         {
             // one-char tokens
             case '(':
-                AddToken(LEFT_PAREN);
+                AddToken(TokenType.LeftParen);
                 break;
             case ')':
-                AddToken(RIGHT_PAREN);
+                AddToken(TokenType.RightParen);
                 break;
             case '{':
-                AddToken(LEFT_BRACE);
+                AddToken(TokenType.LeftBrace);
                 break;
             case '}':
-                AddToken(RIGHT_BRACE);
+                AddToken(TokenType.RightBrace);
                 break;
             case ',':
-                AddToken(COMMA);
+                AddToken(TokenType.Comma);
                 break;
             case '.':
-                AddToken(DOT);
+                AddToken(TokenType.Dot);
                 break;
             case '-':
-                AddToken(MINUS);
+                AddToken(TokenType.Minus);
                 break;
             case '+':
-                AddToken(PLUS);
+                AddToken(TokenType.Plus);
                 break;
             case ';':
-                AddToken(SEMICOLON);
+                AddToken(TokenType.Semicolon);
                 break;
             case '*':
-                AddToken(STAR);
+                AddToken(TokenType.Star);
                 break;
             case '/':
                 Slash();
                 break;
             // one- or two-char tokens
             case '!':
-                AddToken(Match('=') ? BANG_EQUAL : BANG);
+                AddToken(Match('=') ? TokenType.BangEqual : TokenType.Bang);
                 break;
             case '=':
-                AddToken(Match('=') ? EQUAL_EQUAL : EQUAL);
+                AddToken(Match('=') ? TokenType.EqualEqual : TokenType.Equal);
                 break;
             case '<':
-                AddToken(Match('=') ? LESS_EQUAL : LESS);
+                AddToken(Match('=') ? TokenType.LessEqual : TokenType.Less);
                 break;
             case '>':
-                AddToken(Match('=') ? GREATER_EQUAL : GREATER);
+                AddToken(Match('=') ? TokenType.GreaterEqual : TokenType.Greater);
                 break;
             // ignore whitespace
             case ' ':
@@ -263,7 +263,7 @@ internal class Scanner
         }
 
         // else it's an actual slash
-        AddToken(SLASH);
+        AddToken(TokenType.Slash);
     }
 
     /// <summary>
@@ -295,7 +295,7 @@ internal class Scanner
         // trim surrounding quotes
         string value = _source.Substring(_start + 1, CurrentLength - 2);
         // tokenize
-        AddToken(STRING, value);
+        AddToken(TokenType.String, value);
     }
 
     /// <summary>
@@ -324,7 +324,7 @@ internal class Scanner
         // parse the number
         double value = double.Parse(_source.Substring(_start, CurrentLength));
         // tokenize
-        AddToken(NUMBER, value);
+        AddToken(TokenType.Number, value);
     }
 
     /// <summary>
@@ -345,7 +345,7 @@ internal class Scanner
         if (!s_keywordMap.TryGetValue(text, out TokenType type))
         {
             // otherwise it's an identifier
-            type = IDENTIFIER;
+            type = TokenType.Identifier;
         }
 
         // tokenize

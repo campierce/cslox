@@ -1,5 +1,4 @@
 using Lox.AST;
-using static Lox.TokenType;
 
 namespace Lox.Parsing;
 
@@ -10,7 +9,7 @@ internal class Parser
 
     private int _current = 0;
 
-    private bool IsAtEnd => Peek().Type == EOF;
+    private bool IsAtEnd => Peek().Type == TokenType.EOF;
 
     private delegate Expr BinaryLikeExprOperand();
 
@@ -104,21 +103,21 @@ internal class Parser
 
         while (!IsAtEnd)
         {
-            if (Previous().Type == SEMICOLON)
+            if (Previous().Type == TokenType.Semicolon)
             {
                 return;
             }
 
             switch (Peek().Type)
             {
-                case CLASS:
-                case FUN:
-                case VAR:
-                case FOR:
-                case IF:
-                case WHILE:
-                case PRINT:
-                case RETURN:
+                case TokenType.Class:
+                case TokenType.Fun:
+                case TokenType.Var:
+                case TokenType.For:
+                case TokenType.If:
+                case TokenType.While:
+                case TokenType.Print:
+                case TokenType.Return:
                     return;
             }
 
@@ -142,7 +141,7 @@ internal class Parser
 
         Expr expr = Or();
 
-        if (Match(EQUAL))
+        if (Match(TokenType.Equal))
         {
             Token equals = Previous();
             Expr value = Assignment(); // right-associative
@@ -162,42 +161,44 @@ internal class Parser
     {
         // logicOr → logicAnd ( "or" logicAnd )* ;
 
-        return BinaryLikeExpr<Expr.Logical>(And, OR);
+        return BinaryLikeExpr<Expr.Logical>(And, TokenType.Or);
     }
 
     private Expr And()
     {
         // logicAnd → equality ( "and" equality )* ;
 
-        return BinaryLikeExpr<Expr.Logical>(Equality, AND);
+        return BinaryLikeExpr<Expr.Logical>(Equality, TokenType.And);
     }
 
     private Expr Equality()
     {
         // equality → comparison ( ( "!=" | "==" ) comparison )* ;
 
-        return BinaryLikeExpr<Expr.Binary>(Comparison, BANG_EQUAL, EQUAL_EQUAL);
+        return BinaryLikeExpr<Expr.Binary>(Comparison, TokenType.BangEqual, TokenType.EqualEqual);
     }
 
     private Expr Comparison()
     {
         // comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 
-        return BinaryLikeExpr<Expr.Binary>(Term, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL);
+        return BinaryLikeExpr<Expr.Binary>(
+            Term, TokenType.Greater, TokenType.GreaterEqual, TokenType.Less, TokenType.LessEqual
+        );
     }
 
     private Expr Term()
     {
         // term → factor ( ( "-" | "+" ) factor )* ;
 
-        return BinaryLikeExpr<Expr.Binary>(Factor, MINUS, PLUS);
+        return BinaryLikeExpr<Expr.Binary>(Factor, TokenType.Minus, TokenType.Plus);
     }
 
     private Expr Factor()
     {
         // factor → unary ( ( "/" | "*" ) unary )* ;
 
-        return BinaryLikeExpr<Expr.Binary>(Unary, SLASH, STAR);
+        return BinaryLikeExpr<Expr.Binary>(Unary, TokenType.Slash, TokenType.Star);
     }
 
     private Expr Unary()
@@ -205,7 +206,7 @@ internal class Parser
         // unary → ( "!" | "-" ) unary
         //       | call ;
 
-        if (Match(BANG, MINUS))
+        if (Match(TokenType.Bang, TokenType.Minus))
         {
             Token @operator = Previous();
             Expr right = Unary();
@@ -223,10 +224,10 @@ internal class Parser
 
         while (true)
         {
-            if (Match(LEFT_PAREN))
+            if (Match(TokenType.LeftParen))
             {
                 List<Expr> args = Arguments();
-                Token paren = Consume(RIGHT_PAREN, "Expect ')' after arguments.");
+                Token paren = Consume(TokenType.RightParen, "Expect ')' after arguments.");
                 expr = new Expr.Call(expr, paren, args);
             }
             else
@@ -242,7 +243,7 @@ internal class Parser
     {
         // arguments → expression ( "," expression )* ;
 
-        return ItemList<Expr>("arguments", Expression);
+        return ItemList("arguments", Expression);
     }
 
     private Expr Primary()
@@ -252,24 +253,24 @@ internal class Parser
         //         | IDENTIFIER
         //         | "(" expression ")" ;
 
-        if (Match(FALSE)) { return new Expr.Literal(false); }
-        if (Match(TRUE)) { return new Expr.Literal(true); }
-        if (Match(NIL)) { return Nil.Literal; }
+        if (Match(TokenType.False)) { return new Expr.Literal(false); }
+        if (Match(TokenType.True)) { return new Expr.Literal(true); }
+        if (Match(TokenType.Nil)) { return Nil.Literal; }
 
-        if (Match(NUMBER, STRING))
+        if (Match(TokenType.Number, TokenType.String))
         {
             return new Expr.Literal(Previous().Literal);
         }
 
-        if (Match(IDENTIFIER))
+        if (Match(TokenType.Identifier))
         {
             return new Expr.Variable(Previous());
         }
 
-        if (Match(LEFT_PAREN))
+        if (Match(TokenType.LeftParen))
         {
             Expr expr = Expression();
-            Consume(RIGHT_PAREN, "Expect ')' after expression.");
+            Consume(TokenType.RightParen, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
 
@@ -284,8 +285,8 @@ internal class Parser
         //             | varDecl
         //             | statement ;
 
-        if (Match(FUN)) { return Function("function"); } // funDecl → "fun" function ;
-        if (Match(VAR)) { return VarDeclaration(); }
+        if (Match(TokenType.Fun)) { return Function("function"); } // funDecl → "fun" function ;
+        if (Match(TokenType.Var)) { return VarDeclaration(); }
         return Statement();
     }
 
@@ -293,17 +294,17 @@ internal class Parser
     {
         // function → IDENTIFIER "(" parameters? ")" block ;
 
-        Token name = Consume(IDENTIFIER, $"Expect {kind} name.");
-        Consume(LEFT_PAREN, $"Expect '(' after {kind} name.");
+        Token name = Consume(TokenType.Identifier, $"Expect {kind} name.");
+        Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
 
         List<Token> parameters = new();
-        if (!Check(RIGHT_PAREN))
+        if (!Check(TokenType.RightParen))
         {
             parameters = Parameters();
         }
-        Consume(RIGHT_PAREN, "Expect ')' after parameters.");
+        Consume(TokenType.RightParen, "Expect ')' after parameters.");
 
-        Consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        Consume(TokenType.LeftBrace, "Expect '{' before " + kind + " body.");
         List<Stmt> body = Block();
 
         return new Stmt.Function(name, parameters, body);
@@ -313,17 +314,19 @@ internal class Parser
     {
         // parameters → IDENTIFIER ( "," IDENTIFIER )* ;
 
-        return ItemList<Token>("parameters", () => Consume(IDENTIFIER, "Expect parameter name."));
+        return ItemList(
+            "parameters", () => Consume(TokenType.Identifier, "Expect parameter name.")
+        );
     }
 
     private Stmt VarDeclaration()
     {
         // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
 
-        Token name = Consume(IDENTIFIER, "Expect variable name.");
+        Token name = Consume(TokenType.Identifier, "Expect variable name.");
 
         Expr initializer;
-        if (Match(EQUAL))
+        if (Match(TokenType.Equal))
         {
             initializer = Expression();
         }
@@ -332,7 +335,7 @@ internal class Parser
             initializer = Nil.Literal;
         }
 
-        Consume(SEMICOLON, "Expect ';' after variable declaration.");
+        Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
     }
 
@@ -346,13 +349,15 @@ internal class Parser
         //           | block
         //           | exprStmt ;
 
-        if (Match(FOR)) { return ForStatement(); }
-        if (Match(IF)) { return IfStatement(); }
-        if (Match(PRINT)) { return PrintStatement(); }
-        if (Match(RETURN)) { return ReturnStatement(); }
-        if (Match(WHILE)) { return WhileStatement(); }
-        if (Match(LEFT_BRACE)) { return new Stmt.Block(Block()); }
+        #pragma warning disable format
+        if (Match(TokenType.For))       { return ForStatement(); }
+        if (Match(TokenType.If))        { return IfStatement(); }
+        if (Match(TokenType.Print))     { return PrintStatement(); }
+        if (Match(TokenType.Return))    { return ReturnStatement(); }
+        if (Match(TokenType.While))     { return WhileStatement(); }
+        if (Match(TokenType.LeftBrace)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
+        #pragma warning restore format
     }
 
     private Stmt ForStatement()
@@ -361,14 +366,14 @@ internal class Parser
         //           expression? ";"
         //           expression? ")" statement ;
 
-        Consume(LEFT_PAREN, "Expect '(' after 'for'.");
+        Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
 
         Stmt? initializer;
-        if (Match(SEMICOLON))
+        if (Match(TokenType.Semicolon))
         {
             initializer = null;
         }
-        else if (Match(VAR))
+        else if (Match(TokenType.Var))
         {
             initializer = VarDeclaration();
         }
@@ -378,18 +383,18 @@ internal class Parser
         }
 
         Expr? condition = null;
-        if (!Check(SEMICOLON))
+        if (!Check(TokenType.Semicolon))
         {
             condition = Expression();
         }
-        Consume(SEMICOLON, "Expect ';' after loop condition");
+        Consume(TokenType.Semicolon, "Expect ';' after loop condition");
 
         Expr? increment = null;
-        if (!Check(RIGHT_PAREN))
+        if (!Check(TokenType.RightParen))
         {
             increment = Expression();
         }
-        Consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+        Consume(TokenType.RightParen, "Expect ')' after for clauses.");
 
         Stmt body = Statement();
 
@@ -422,14 +427,14 @@ internal class Parser
         // ifStmt → "if" "(" expression ")" statement
         //          ( "else" statement )? ;
 
-        Consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Consume(TokenType.LeftParen, "Expect '(' after 'if'.");
         Expr condition = Expression();
-        Consume(RIGHT_PAREN, "Expect ')' after if condition.");
+        Consume(TokenType.RightParen, "Expect ')' after if condition.");
 
         Stmt thenBranch = Statement(); // notice: not a declaration
 
         Stmt? elseBranch = null;
-        if (Match(ELSE))
+        if (Match(TokenType.Else))
         {
             elseBranch = Statement();
         }
@@ -442,7 +447,7 @@ internal class Parser
         // printStmt → "print" expression ";" ;
 
         Expr value = Expression();
-        Consume(SEMICOLON, "Expect ';' after value.");
+        Consume(TokenType.Semicolon, "Expect ';' after value.");
         return new Stmt.Print(value);
     }
 
@@ -453,7 +458,7 @@ internal class Parser
         Token keyword = Previous();
 
         Expr value;
-        if (!Check(SEMICOLON))
+        if (!Check(TokenType.Semicolon))
         {
             value = Expression();
         }
@@ -462,7 +467,7 @@ internal class Parser
             value = Nil.Literal;
         }
 
-        Consume(SEMICOLON, "Expect ';' after return value.");
+        Consume(TokenType.Semicolon, "Expect ';' after return value.");
         return new Stmt.Return(keyword, value);
     }
 
@@ -470,9 +475,9 @@ internal class Parser
     {
         // whileStmt → "while" "(" expression ")" statement ;
 
-        Consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Consume(TokenType.LeftParen, "Expect '(' after 'while'.");
         Expr condition = Expression();
-        Consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Consume(TokenType.RightParen, "Expect ')' after condition.");
         Stmt body = Statement();
 
         return new Stmt.While(condition, body);
@@ -483,7 +488,7 @@ internal class Parser
         // exprStmt → expression ";" ;
 
         Expr expr = Expression();
-        Consume(SEMICOLON, "Expect ';' after expression.");
+        Consume(TokenType.Semicolon, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
     }
 
@@ -492,12 +497,12 @@ internal class Parser
         // block → "{" declaration* "}" ;
 
         List<Stmt> statements = new();
-        while (!Check(RIGHT_BRACE) && !IsAtEnd)
+        while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             statements.Add(Declaration());
         }
 
-        Consume(RIGHT_BRACE, "Expect '}' after block.");
+        Consume(TokenType.RightBrace, "Expect '}' after block.");
         return statements;
     }
     #endregion
@@ -557,7 +562,7 @@ internal class Parser
 
         List<TItem> items = new();
 
-        if (!Check(RIGHT_PAREN))
+        if (!Check(TokenType.RightParen))
         {
             do
             {
@@ -566,7 +571,7 @@ internal class Parser
                     Error(Peek(), $"Can't have more than 255 {kind}.");
                 }
                 items.Add(consumer());
-            } while (Match(COMMA));
+            } while (Match(TokenType.Comma));
         }
 
         return items;
