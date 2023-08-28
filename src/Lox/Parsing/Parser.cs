@@ -529,7 +529,8 @@ internal class Parser
     /// </param>
     /// <returns>An expression.</returns>
     private Expr BinaryLikeExpr<TExpr>(
-        BinaryLikeExprOperand operand, params TokenType[] operators) where TExpr : Expr
+        BinaryLikeExprOperand operand, params TokenType[] operators
+    ) where TExpr : Expr
     {
         // binaryLikeExpr → operand ( operators[x] operand )* ;
 

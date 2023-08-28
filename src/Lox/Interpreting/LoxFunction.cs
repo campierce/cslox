@@ -22,9 +22,9 @@ internal class LoxFunction : ICallable
         Environment environment = new(_closure);
 
         // bind parameters to their arguments
-        for (int i = 0; i < _declaration.Params.Count; i++)
+        foreach (var (i, param) in _declaration.Params.Enumerate())
         {
-            environment.Define(_declaration.Params[i].Lexeme, arguments[i]);
+            environment.Define(param.Lexeme, arguments[i]);
         }
 
         // execute the function body
