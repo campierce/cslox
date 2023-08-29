@@ -79,7 +79,7 @@ public class Lox
             _hadError = true;
         }
 
-        Console.Error.WriteLine($"{error.Line}{error.Name} error{error.Where}: {error.Message}");
+        Console.Error.WriteLine($"{error.Line}{error.Type} error{error.Where}: {error.Message}");
     }
     #endregion
 

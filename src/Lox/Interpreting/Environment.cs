@@ -26,7 +26,7 @@ internal class Environment
     /// <summary>
     /// Creates a new enclosed Environment.
     /// </summary>
-    /// <param name="enclosing">The enclosing Environment.</param>
+    /// <param name="enclosing">The enclosing environment.</param>
     public Environment(Environment enclosing)
     {
         _enclosing = enclosing;

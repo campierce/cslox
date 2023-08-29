@@ -80,7 +80,7 @@ internal class Scanner
             _start = _current;
             ScanToken();
         }
-        _tokens.Add(new Token(TokenType.EOF, string.Empty, Nil.Instance, _line));
+        _tokens.Add(new Token(TokenType.EOF, string.Empty, null, _line));
         return _tokens;
     }
     #endregion
@@ -144,13 +144,13 @@ internal class Scanner
     /// </summary>
     private void AddToken(TokenType type)
     {
-        AddToken(type, Nil.Instance);
+        AddToken(type, null);
     }
 
     /// <summary>
     /// Adds a token to the list.
     /// </summary>
-    private void AddToken(TokenType type, object literal)
+    private void AddToken(TokenType type, object? literal)
     {
         string text = _source.Substring(_start, CurrentLength);
         _tokens.Add(new Token(type, text, literal, _line));

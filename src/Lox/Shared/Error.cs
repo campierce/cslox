@@ -2,24 +2,29 @@ namespace Lox;
 
 abstract internal class Error : Exception
 {
-    private readonly int? _line;
+    /// <summary>
+    /// The line number where the error occurred.
+    /// </summary>
+    private readonly int _line;
 
+    /// <summary>
+    /// The token where the error occurred, if applicable.
+    /// </summary>
     private readonly Token? _token;
 
-    abstract public string Name { get; }
+    /// <summary>
+    /// The type of error.
+    /// </summary>
+    abstract public string Type { get; }
 
-    public string Line
-    {
-        get
-        {
-            if (_line is not null)
-            {
-                return $"[line {_line}] ";
-            }
-            return string.Empty;
-        }
-    }
+    /// <summary>
+    /// The error's line as a formatted string.
+    /// </summary>
+    public string Line => $"[line {_line}] ";
 
+    /// <summary>
+    /// The error's token as a formatted string.
+    /// </summary>
     public string Where
     {
         get
@@ -36,15 +41,21 @@ abstract internal class Error : Exception
         }
     }
 
-    public Error(string message) : base(message)
-    {
-    }
-
+    /// <summary>
+    /// Creates a new Error.
+    /// </summary>
+    /// <param name="line">The line number where the error occurred.</param>
+    /// <param name="message">The error message.</param>
     public Error(int line, string message) : base(message)
     {
         _line = line;
     }
 
+    /// <summary>
+    /// Creates a new Error.
+    /// </summary>
+    /// <param name="token">The token where the error occurred.</param>
+    /// <param name="message">The error message.</param>
     public Error(Token token, string message) : base(message)
     {
         _line = token.Line;

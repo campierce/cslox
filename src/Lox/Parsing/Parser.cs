@@ -259,7 +259,8 @@ internal class Parser
 
         if (Match(TokenType.Number, TokenType.String))
         {
-            return new Expr.Literal(Previous().Literal);
+            // the scanner sets a non-null literal on these token types
+            return new Expr.Literal(Previous().Literal!);
         }
 
         if (Match(TokenType.Identifier))
