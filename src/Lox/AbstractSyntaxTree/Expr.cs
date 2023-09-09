@@ -13,11 +13,15 @@ internal abstract class Expr
 
         T VisitCallExpr(Call expr);
 
+        T VisitGetExpr(Get expr);
+
         T VisitGroupingExpr(Grouping expr);
 
         T VisitLiteralExpr(Literal expr);
 
         T VisitLogicalExpr(Logical expr);
+
+        T VisitSetExpr(Set expr);
 
         T VisitUnaryExpr(Unary expr);
 
@@ -79,6 +83,23 @@ internal abstract class Expr
         }
     }
 
+    internal class Get : Expr
+    {
+        public Expr Object { get; }
+        public Token Name { get; }
+
+        public Get(Expr @object, Token name)
+        {
+            Object = @object;
+            Name = name;
+        }
+
+        public override T Accept<T>(IVisitor<T> visitor)
+        {
+            return visitor.VisitGetExpr(this);
+        }
+    }
+
     internal class Grouping : Expr
     {
         public Expr Expression { get; }
@@ -125,6 +146,25 @@ internal abstract class Expr
         public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitLogicalExpr(this);
+        }
+    }
+
+    internal class Set : Expr
+    {
+        public Expr Object { get; }
+        public Token Name { get; }
+        public Expr Value { get; }
+
+        public Set(Expr @object, Token name, Expr value)
+        {
+            Object = @object;
+            Name = name;
+            Value = value;
+        }
+
+        public override T Accept<T>(IVisitor<T> visitor)
+        {
+            return visitor.VisitSetExpr(this);
         }
     }
 

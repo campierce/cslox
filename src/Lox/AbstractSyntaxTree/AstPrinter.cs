@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 using Lox.AST;
 
@@ -33,6 +34,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
         return Parenthesize("call", expr.Callee, expr.Arguments);
     }
 
+    public string VisitGetExpr(Expr.Get expr)
+    {
+        return Parenthesize(".", expr.Object, expr.Name.Lexeme);
+    }
+
     public string VisitGroupingExpr(Expr.Grouping expr)
     {
         return Parenthesize("group", expr.Expression);
@@ -46,6 +52,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     public string VisitLogicalExpr(Expr.Logical expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
+    }
+
+    public string VisitSetExpr(Expr.Set expr)
+    {
+        return Parenthesize("=", expr.Object, expr.Name.Lexeme, expr.Value);
     }
 
     public string VisitUnaryExpr(Expr.Unary expr)
@@ -63,6 +74,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     public string VisitBlockStmt(Stmt.Block stmt)
     {
         return Parenthesize("block", stmt.Statements);
+    }
+
+    public string VisitClassStmt(Stmt.Class stmt)
+    {
+        return Parenthesize("class", stmt.Name.Lexeme, stmt.Methods);
     }
 
     public string VisitExpressionStmt(Stmt.Expression stmt)
@@ -109,11 +125,32 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     #endregion
 
     #region Helpers
+    private string Parenthesize(string label, params object[] parts)
+    {
+        StringBuilder sb = new();
+
+        sb.Append($"({label}");
+        Transform(sb, parts);
+        sb.Append(')');
+
+        return sb.ToString();
+    }
+
     private void Transform(StringBuilder sb, params object[] parts)
     {
         foreach (object part in parts)
         {
+            if (part is IList list)
+            {
+                if (list.Count > 0)
+                {
+                    Transform(sb, list.Cast<object>().ToArray());
+                }
+                continue;
+            }
+
             sb.Append(' ');
+
             switch (part)
             {
                 case Token token:
@@ -125,31 +162,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
                 case Stmt stmt:
                     sb.Append(Print(stmt));
                     break;
-                case List<Token> tokenList:
-                    Transform(sb, tokenList.ToArray());
-                    break;
-                case List<Expr> exprList:
-                    Transform(sb, exprList.ToArray());
-                    break;
-                case List<Stmt> stmtList:
-                    Transform(sb, stmtList.ToArray());
-                    break;
                 default:
                     sb.Append(part);
                     break;
             }
         }
-    }
-
-    private string Parenthesize(string label, params object[] parts)
-    {
-        StringBuilder sb = new();
-
-        sb.Append($"({label}");
-        Transform(sb, parts);
-        sb.Append(')');
-
-        return sb.ToString();
     }
     #endregion
 }

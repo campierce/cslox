@@ -142,6 +142,17 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         throw new RuntimeError(expr.Paren, "Can only call functions and classes.");
     }
 
+    public object VisitGetExpr(Expr.Get expr)
+    {
+        object obj = Evaluate(expr.Object);
+        if (obj is LoxInstance instance)
+        {
+            return instance.Get(expr.Name);
+        }
+
+        throw new RuntimeError(expr.Name, "Only instances have properties.");
+    }
+
     public object VisitGroupingExpr(Expr.Grouping expr)
     {
         return Evaluate(expr.Expression);
@@ -167,6 +178,20 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
 
         return Evaluate(expr.Right);
+    }
+
+    public object VisitSetExpr(Expr.Set expr)
+    {
+        object obj = Evaluate(expr.Object);
+
+        if (obj is LoxInstance instance)
+        {
+            object value = Evaluate(expr.Value);
+            instance.Set(expr.Name, value);
+            return value;
+        }
+
+        throw new RuntimeError(expr.Name, "Only instances have fields.");
     }
 
     public object VisitUnaryExpr(Expr.Unary expr)
@@ -195,6 +220,15 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     public Void VisitBlockStmt(Stmt.Block stmt)
     {
         ExecuteBlock(stmt.Statements, new Environment(_environment));
+        return default;
+    }
+
+    public Void VisitClassStmt(Stmt.Class stmt)
+    {
+        _environment.Define(stmt.Name.Lexeme, Nil.Instance);
+        // ^ later: allows methods to reference their containing class
+        LoxClass @class = new(stmt.Name.Lexeme);
+        _environment.Assign(stmt.Name, @class);
         return default;
     }
 

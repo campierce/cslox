@@ -9,6 +9,8 @@ internal abstract class Stmt
     {
         T VisitBlockStmt(Block stmt);
 
+        T VisitClassStmt(Class stmt);
+
         T VisitExpressionStmt(Expression stmt);
 
         T VisitFunctionStmt(Function stmt);
@@ -36,6 +38,23 @@ internal abstract class Stmt
         public override T Accept<T>(IVisitor<T> visitor)
         {
             return visitor.VisitBlockStmt(this);
+        }
+    }
+
+    internal class Class : Stmt
+    {
+        public Token Name { get; }
+        public List<Stmt.Function> Methods { get; }
+
+        public Class(Token name, List<Stmt.Function> methods)
+        {
+            Name = name;
+            Methods = methods;
+        }
+
+        public override T Accept<T>(IVisitor<T> visitor)
+        {
+            return visitor.VisitClassStmt(this);
         }
     }
 

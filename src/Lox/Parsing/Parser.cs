@@ -136,7 +136,7 @@ internal class Parser
 
     private Expr Assignment()
     {
-        // assignment → IDENTIFIER "=" assignment
+        // assignment → ( call "." )? IDENTIFIER "=" assignment
         //            | logicOr ;
 
         Expr expr = Or();
@@ -149,6 +149,10 @@ internal class Parser
             if (expr is Expr.Variable variable)
             {
                 return new Expr.Assign(variable.Name, value);
+            }
+            else if (expr is Expr.Get get)
+            {
+                return new Expr.Set(get.Object, get.Name, value);
             }
 
             Error(equals, "Invalid assignment target.");
@@ -218,7 +222,7 @@ internal class Parser
 
     private Expr Call()
     {
-        // call → primary ( "(" arguments? ")" )* ;
+        // call → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 
         Expr expr = Primary();
 
@@ -229,6 +233,11 @@ internal class Parser
                 List<Expr> args = Arguments();
                 Token paren = Consume(TokenType.RightParen, "Expect ')' after arguments.");
                 expr = new Expr.Call(expr, paren, args);
+            }
+            else if (Match(TokenType.Dot))
+            {
+                Token name = Consume(TokenType.Identifier, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
             }
             else
             {
@@ -282,16 +291,38 @@ internal class Parser
     #region Statements
     private Stmt Declaration()
     {
-        // declaration → funcDecl
+        // declaration → classDecl
+        //             | funcDecl
         //             | varDecl
         //             | statement ;
 
-        if (Match(TokenType.Fun)) { return Function("function"); } // funDecl → "fun" function ;
-        if (Match(TokenType.Var)) { return VarDeclaration(); }
+        #pragma warning disable format
+        if (Match(TokenType.Class)) { return ClassDeclaration(); }
+        if (Match(TokenType.Fun))   { return Function("function"); } // funDecl → "fun" function ;
+        if (Match(TokenType.Var))   { return VarDeclaration(); }
         return Statement();
+        #pragma warning restore format
     }
 
-    private Stmt Function(string kind)
+    private Stmt ClassDeclaration()
+    {
+        // classDecl → "class" IDENTIFIER "{" function* "}" ;
+
+        Token name = Consume(TokenType.Identifier, "Expect class name.");
+        Consume(TokenType.LeftBrace, "Expect '{' before class body.");
+
+        List<Stmt.Function> methods = new();
+        while (!Check(TokenType.RightBrace) && !IsAtEnd)
+        {
+            methods.Add(Function("method"));
+        }
+
+        Consume(TokenType.RightBrace, "Expect '}' after class body.");
+
+        return new Stmt.Class(name, methods);
+    }
+
+    private Stmt.Function Function(string kind)
     {
         // function → IDENTIFIER "(" parameters? ")" block ;
 
@@ -560,7 +591,7 @@ internal class Parser
     /// <returns>A list of items.</returns>
     private List<TItem> ItemList<TItem>(string kind, ListItemConsumer<TItem> consumer)
     {
-        // itemsList → item ( "," item )* ;
+        // itemList → item ( "," item )* ;
 
         List<TItem> items = new();
 

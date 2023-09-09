@@ -49,6 +49,12 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         return default;
     }
 
+    public Void VisitGetExpr(Expr.Get expr)
+    {
+        Resolve(expr.Object);
+        return default;
+    }
+
     public Void VisitGroupingExpr(Expr.Grouping expr)
     {
         Resolve(expr.Expression);
@@ -64,6 +70,13 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         Resolve(expr.Left);
         Resolve(expr.Right);
+        return default;
+    }
+
+    public Void VisitSetExpr(Expr.Set expr)
+    {
+        Resolve(expr.Value);
+        Resolve(expr.Object);
         return default;
     }
 
@@ -95,6 +108,13 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         BeginScope();
         Resolve(stmt.Statements);
         EndScope();
+        return default;
+    }
+
+    public Void VisitClassStmt(Stmt.Class stmt)
+    {
+        Declare(stmt.Name);
+        Define(stmt.Name);
         return default;
     }
 

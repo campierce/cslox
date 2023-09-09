@@ -15,6 +15,8 @@ build:
 clean:
 	@echo "Removing build artifacts..."
 	@dotnet clean $(SLN)
+	@echo "Removing published executable..."
+	@rm -f cslox # must match <AssemblyName>
 
 publish:
 	@echo "Publishing executable..."
