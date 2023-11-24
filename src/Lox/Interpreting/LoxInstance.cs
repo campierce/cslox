@@ -4,11 +4,12 @@ internal class LoxInstance
 {
     private readonly LoxClass _class;
 
-    private readonly Dictionary<string, object> _fields = new();
+    private readonly Dictionary<string, object> _fields;
 
     public LoxInstance(LoxClass @class)
     {
         _class = @class;
+        _fields = new();
     }
 
     public object Get(Token name)

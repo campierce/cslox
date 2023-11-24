@@ -49,7 +49,7 @@ public class AstGenerator
             new List<string>
             {
                 "Block      : List<Stmt> statements",
-                "Class      : Token name, List<Stmt.Function> methods",
+                "Class      : Token name, List<Function> methods",
                 "Expression : Expr innerExpression",
                 $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",

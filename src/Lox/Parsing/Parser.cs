@@ -7,7 +7,7 @@ internal class Parser
     #region Fields/Properties/Delegates
     private readonly List<Token> _tokens;
 
-    private int _current = 0;
+    private int _current;
 
     private bool IsAtEnd => Peek().Type == TokenType.EOF;
 
@@ -20,6 +20,7 @@ internal class Parser
     public Parser(List<Token> tokens)
     {
         _tokens = tokens;
+        _current = 0;
     }
     #endregion
 
@@ -336,7 +337,7 @@ internal class Parser
         }
         Consume(TokenType.RightParen, "Expect ')' after parameters.");
 
-        Consume(TokenType.LeftBrace, "Expect '{' before " + kind + " body.");
+        Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
         List<Stmt> body = Block();
 
         return new Stmt.Function(name, parameters, body);
@@ -435,8 +436,7 @@ internal class Parser
         // evaluate the increment after the body
         if (increment is not null)
         {
-            body = new Stmt.Block(
-                new List<Stmt> { body, new Stmt.Expression(increment) });
+            body = new Stmt.Block(new List<Stmt> { body, new Stmt.Expression(increment) });
         }
 
         // make sure there's a condition
@@ -552,13 +552,10 @@ internal class Parser
     /// <see cref="Expr.Logical"/>.
     /// </summary>
     /// <typeparam name="TExpr">The concrete type to parse.</typeparam>
-    /// <param name="operand">
-    /// A delegate that parses expressions of higher precedence than that specified by the given
-    /// operators.
-    /// </param>
-    /// <param name="operators">
-    /// The operators that are allowed to participate in this binary-like expression.
-    /// </param>
+    /// <param name="operand">A delegate that parses expressions of higher precedence than that
+    /// specified by the given operators.</param>
+    /// <param name="operators">The operators that are allowed to participate in this binary-like
+    /// expression.</param>
     /// <returns>An expression.</returns>
     private Expr BinaryLikeExpr<TExpr>(
         BinaryLikeExprOperand operand, params TokenType[] operators

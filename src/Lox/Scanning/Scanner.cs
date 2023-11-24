@@ -4,33 +4,40 @@ internal class Scanner
 {
     #region Fields/Properties
     /// <summary>
-    /// Source text to scan.
+    /// The source text to be scanned.
     /// </summary>
     private readonly string _source;
+
+    /// <summary>
+    /// Index of the current character.
+    /// </summary>
+    private int _current;
+
+    /// <summary>
+    /// Current line number.
+    /// </summary>
+    private int _line;
+
+    /// <summary>
+    /// Index of the character that starts the current token.
+    /// </summary>
+    private int _start;
+
     /// <summary>
     /// Tokens derived from the source text.
     /// </summary>
-    private readonly List<Token> _tokens = new();
+    private readonly List<Token> _tokens;
+
     /// <summary>
-    /// Index of the character that starts the token under consideration.
-    /// </summary>
-    private int _start = 0;
-    /// <summary>
-    /// Index of the character under consideration.
-    /// </summary>
-    private int _current = 0;
-    /// <summary>
-    /// Line number under consideration.
-    /// </summary>
-    private int _line = 1;
-    /// <summary>
-    /// Length of the token under consideration.
+    /// Length of the current token.
     /// </summary>
     private int CurrentLength => _current - _start;
+
     /// <summary>
     /// Whether the scanner has reached the end of the source text.
     /// </summary>
     private bool IsAtEnd => _current >= _source.Length;
+
     /// <summary>
     /// Maps keyword literals to their token types.
     /// </summary>
@@ -61,10 +68,14 @@ internal class Scanner
     /// <summary>
     /// Creates a new Scanner.
     /// </summary>
-    /// <param name="source">Source text.</param>
-    public Scanner(string source)
+    /// <param name="sourceText">The source text to be scanned.</param>
+    public Scanner(string sourceText)
     {
-        _source = source;
+        _source = sourceText;
+        _current = 0;
+        _line = 1;
+        _start = 0;
+        _tokens = new();
     }
     #endregion
 
@@ -140,7 +151,7 @@ internal class Scanner
 
     #region Token list access
     /// <summary>
-    /// Adds a token with a null-like literal to the list.
+    /// Adds a non-literal token to the list.
     /// </summary>
     private void AddToken(TokenType type)
     {

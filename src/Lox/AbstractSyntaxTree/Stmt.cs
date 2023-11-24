@@ -44,9 +44,9 @@ internal abstract class Stmt
     internal class Class : Stmt
     {
         public Token Name { get; }
-        public List<Stmt.Function> Methods { get; }
+        public List<Function> Methods { get; }
 
-        public Class(Token name, List<Stmt.Function> methods)
+        public Class(Token name, List<Function> methods)
         {
             Name = name;
             Methods = methods;

@@ -6,7 +6,7 @@ internal class Environment
     /// <summary>
     /// Maps variable names to their values.
     /// </summary>
-    private readonly Dictionary<string, object> _values = new();
+    private readonly Dictionary<string, object> _values;
 
     /// <summary>
     /// The enclosing environment, if applicable.
@@ -20,6 +20,7 @@ internal class Environment
     /// </summary>
     public Environment()
     {
+        _values = new();
         _enclosing = null;
     }
 
@@ -29,6 +30,7 @@ internal class Environment
     /// <param name="enclosing">The enclosing environment.</param>
     public Environment(Environment enclosing)
     {
+        _values = new();
         _enclosing = enclosing;
     }
     #endregion
@@ -126,6 +128,7 @@ internal class Environment
         Environment environment = this;
         for (int i = 0; i < distance; i++)
         {
+            // safe to assume the enclosing env is non-null b/c the resolver found it earlier
             environment = environment._enclosing!;
         }
 

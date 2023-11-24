@@ -5,17 +5,23 @@ namespace Lox.Interpreting;
 internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
     #region Fields/Properties
+    private readonly Environment _globals;
+
     private Environment _environment;
 
-    private readonly Environment _globals = new();
-
-    private readonly Dictionary<Expr, int> _locals = new();
+    /// <summary>
+    /// Maps an assignment/variable expression to the number of environments between it and the
+    /// location of the corresponding variable's value.
+    /// </summary>
+    private readonly Dictionary<Expr, int> _locals;
     #endregion
 
     #region Constructors
     public Interpreter()
     {
+        _globals = new();
         _environment = _globals;
+        _locals = new();
 
         // define native functions
         _globals.Define("clock", new Clock());
