@@ -29,7 +29,7 @@ public class AstGenerator
             "Expr",
             new List<string>
             {
-                "Assign   : Token name, Expr value",
+                "Assign   : Variable target, Expr value",
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Call     : Expr callee, Token paren, List<Expr> arguments",
                 $"Get     : Expr {escapePrefix}object, Token name",
@@ -51,7 +51,7 @@ public class AstGenerator
                 "Block      : List<Stmt> statements",
                 "Class      : Token name, List<Function> methods",
                 "Expression : Expr innerExpression",
-                $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
+                $"Function  : Token name, List<Token> {escapePrefix}params, Block body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr content",
                 "Return     : Token keyword, Expr value",

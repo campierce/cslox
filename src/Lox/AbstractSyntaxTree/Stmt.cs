@@ -77,9 +77,9 @@ internal abstract class Stmt
     {
         public Token Name { get; }
         public List<Token> Params { get; }
-        public List<Stmt> Body { get; }
+        public Block Body { get; }
 
-        public Function(Token name, List<Token> @params, List<Stmt> body)
+        public Function(Token name, List<Token> @params, Block body)
         {
             Name = name;
             Params = @params;

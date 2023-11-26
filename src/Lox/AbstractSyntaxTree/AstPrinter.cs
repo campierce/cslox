@@ -21,7 +21,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     #region Expr visitor
     public string VisitAssignExpr(Expr.Assign expr)
     {
-        return Parenthesize("=", expr.Name.Lexeme, expr.Value);
+        return Parenthesize("=", expr.Target.Name.Lexeme, expr.Value);
     }
 
     public string VisitBinaryExpr(Expr.Binary expr)

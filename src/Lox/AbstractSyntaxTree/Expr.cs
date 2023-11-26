@@ -30,12 +30,12 @@ internal abstract class Expr
 
     internal class Assign : Expr
     {
-        public Token Name { get; }
+        public Variable Target { get; }
         public Expr Value { get; }
 
-        public Assign(Token name, Expr value)
+        public Assign(Variable target, Expr value)
         {
-            Name = name;
+            Target = target;
             Value = value;
         }
 

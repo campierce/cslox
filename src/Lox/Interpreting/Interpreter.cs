@@ -41,13 +41,13 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
     }
 
-    public void ExecuteBlock(List<Stmt> statements, Environment environment)
+    public void ExecuteBlock(Stmt.Block block, Environment environment)
     {
         Environment previous = _environment;
         try
         {
             _environment = environment;
-            statements.ForEach(Execute);
+            block.Statements.ForEach(Execute);
         }
         finally
         {
@@ -68,11 +68,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         if (_locals.TryGetValue(expr, out int distance))
         {
-            _environment.AssignAt(distance, expr.Name, value);
+            _environment.AssignAt(distance, expr.Target.Name, value);
         }
         else
         {
-            _globals.Assign(expr.Name, value);
+            _globals.Assign(expr.Target.Name, value);
         }
 
         return value;
@@ -225,7 +225,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #region Stmt visitor
     public Void VisitBlockStmt(Stmt.Block stmt)
     {
-        ExecuteBlock(stmt.Statements, new Environment(_environment));
+        ExecuteBlock(stmt, new Environment(_environment));
         return default;
     }
 

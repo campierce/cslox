@@ -12,9 +12,14 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     private readonly Interpreter _interpreter;
 
     /// <summary>
-    /// Stack of lexical scopes. Each scope maps a variable name to whether we have resolved its
-    /// initializer (which allows us to catch the case where a variable is referenced by its own
-    /// initializer).
+    /// Stack of lexical scopes, each of which maps an identifier name to whether we have resolved
+    /// its initializer (which allows us to prevent the initializer from referencing the variable
+    /// itself).
+    /// <para>
+    /// Note the concept of an initializer only applies to variable statements, so other kinds of
+    /// identifiers (e.g. a class name) will be considered "initialized" right away. Tracking all
+    /// identifiers like this allows us to prevent name collisions within the same scope.
+    /// </para>
     /// </summary>
     private readonly Stack<Dictionary<string, bool>> _scopes;
 
@@ -22,7 +27,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// The function "context" that surrounds the syntax node we are currently visiting; if none,
     /// then we know a return statement is not permitted.
     /// </summary>
-    private FunctionType _currentFunction = FunctionType.None;
+    private FunctionType _currentFunction;
     #endregion
 
     #region Constructors
@@ -34,6 +39,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         _interpreter = interpreter;
         _scopes = new();
+        _currentFunction = FunctionType.None;
     }
     #endregion
 
@@ -52,7 +58,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     public Void VisitAssignExpr(Expr.Assign expr)
     {
         Resolve(expr.Value);
-        ResolveLocal(expr, expr.Name);
+        ResolveLocal(expr, expr.Target.Name);
         return default;
     }
 
@@ -232,7 +238,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// </summary>
     private void BeginScope()
     {
-        _scopes.Push(new Dictionary<string, bool>());
+        _scopes.Push(new());
     }
 
     /// <summary>
@@ -244,9 +250,9 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     }
 
     /// <summary>
-    /// Declares a not-yet-initialized variable.
+    /// Declares an uninitialized identifier.
     /// </summary>
-    /// <param name="name">A token containing the name of the variable.</param>
+    /// <param name="name">A token representing the identifier.</param>
     private void Declare(Token name)
     {
         if (_scopes.Count == 0) { return; } // global
@@ -259,18 +265,18 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
             );
         }
 
-        scope[name.Lexeme] = false; // initializer has not yet been resolved
+        scope[name.Lexeme] = false; // uninitialized
     }
 
     /// <summary>
-    /// Defines a variable, i.e. marks it as initialized.
+    /// Defines an identifier, i.e. marks it as initialized.
     /// </summary>
-    /// <param name="name"></param>
+    /// <param name="name">A token representing the identifier.</param>
     private void Define(Token name)
     {
         if (_scopes.Count == 0) { return; } // global
 
-        _scopes.Peek()[name.Lexeme] = true; // initializer has now been resolved
+        _scopes.Peek()[name.Lexeme] = true; // initialized
     }
     #endregion
 

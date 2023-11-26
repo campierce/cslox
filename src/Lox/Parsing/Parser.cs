@@ -149,7 +149,7 @@ internal class Parser
 
             if (expr is Expr.Variable variable)
             {
-                return new Expr.Assign(variable.Name, value);
+                return new Expr.Assign(variable, value);
             }
             else if (expr is Expr.Get get)
             {
@@ -338,7 +338,7 @@ internal class Parser
         Consume(TokenType.RightParen, "Expect ')' after parameters.");
 
         Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
-        List<Stmt> body = Block();
+        Stmt.Block body = Block();
 
         return new Stmt.Function(name, parameters, body);
     }
@@ -388,7 +388,7 @@ internal class Parser
         if (Match(TokenType.Print))     { return PrintStatement(); }
         if (Match(TokenType.Return))    { return ReturnStatement(); }
         if (Match(TokenType.While))     { return WhileStatement(); }
-        if (Match(TokenType.LeftBrace)) { return new Stmt.Block(Block()); }
+        if (Match(TokenType.LeftBrace)) { return Block(); }
         return ExpressionStatement();
         #pragma warning restore format
     }
@@ -515,16 +515,7 @@ internal class Parser
         return new Stmt.While(condition, body);
     }
 
-    private Stmt ExpressionStatement()
-    {
-        // exprStmt → expression ";" ;
-
-        Expr expr = Expression();
-        Consume(TokenType.Semicolon, "Expect ';' after expression.");
-        return new Stmt.Expression(expr);
-    }
-
-    private List<Stmt> Block()
+    private Stmt.Block Block()
     {
         // block → "{" declaration* "}" ;
 
@@ -535,7 +526,16 @@ internal class Parser
         }
 
         Consume(TokenType.RightBrace, "Expect '}' after block.");
-        return statements;
+        return new Stmt.Block(statements);
+    }
+
+    private Stmt ExpressionStatement()
+    {
+        // exprStmt → expression ";" ;
+
+        Expr expr = Expression();
+        Consume(TokenType.Semicolon, "Expect ';' after expression.");
+        return new Stmt.Expression(expr);
     }
     #endregion
 
