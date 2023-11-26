@@ -91,9 +91,9 @@ internal class Environment
     public object Get(Token name)
     {
         // try to use this scope
-        if (_values.ContainsKey(name.Lexeme))
+        if (_values.TryGetValue(name.Lexeme, out object? value))
         {
-            return _values[name.Lexeme];
+            return value;
         }
 
         // otherwise try the enclosing scope

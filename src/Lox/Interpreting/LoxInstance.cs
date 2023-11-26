@@ -14,9 +14,14 @@ internal class LoxInstance
 
     public object Get(Token name)
     {
-        if (_fields.ContainsKey(name.Lexeme))
+        if (_fields.TryGetValue(name.Lexeme, out object? field))
         {
-            return _fields[name.Lexeme];
+            return field;
+        }
+
+        if (_class.TryGetMethod(name.Lexeme, out LoxFunction? method))
+        {
+            return method!;
         }
 
         throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.");

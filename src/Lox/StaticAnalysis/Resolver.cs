@@ -12,13 +12,14 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     private readonly Interpreter _interpreter;
 
     /// <summary>
-    /// Stack of lexical scopes, each of which maps an identifier name to whether we have resolved
-    /// its initializer (which allows us to prevent the initializer from referencing the variable
+    /// Stack of lexical scopes, each of which maps a variable name to whether we have resolved its
+    /// initializer (which allows us to prevent the initializer from referencing the variable
     /// itself).
     /// <para>
-    /// Note the concept of an initializer only applies to variable statements, so other kinds of
-    /// identifiers (e.g. a class name) will be considered "initialized" right away. Tracking all
-    /// identifiers like this allows us to prevent name collisions within the same scope.
+    /// Note the concept of an initializer only applies to variable statements, so other usages of
+    /// variables (e.g. a function's name in its declaration) will be considered "initialized" right
+    /// away. Tracking all variables like this allows us to prevent name collisions within the same
+    /// scope.
     /// </para>
     /// </summary>
     private readonly Stack<Dictionary<string, bool>> _scopes;
@@ -143,7 +144,11 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         Declare(stmt.Name);
         Define(stmt.Name);
 
-        // TODO resolve methods
+        foreach (Stmt.Function method in stmt.Methods)
+        {
+            FunctionType declaration = FunctionType.Method;
+            ResolveFunction(method, declaration);
+        }
 
         return default;
     }
@@ -212,7 +217,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     #region Interpreter access
     /// <summary>
     /// Resolves a local variable within the interpreter, by finding the number of environments
-    /// between a variable's usage and its declaration.
+    /// between that variable's usage and its declaration (its "distance").
     /// </summary>
     /// <param name="expr">The (assignment or variable) expression in which the variable is used.
     /// </param>
@@ -220,12 +225,12 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     private void ResolveLocal(Expr expr, Token name)
     {
         // walk from inner to outermost scope
-        foreach (var (depth, scope) in _scopes.Enumerate())
+        foreach (var (distance, scope) in _scopes.Enumerate())
         {
-            // if we find the variable, pass its depth to the interpreter
+            // if we find the variable, pass its distance to the interpreter
             if (scope.ContainsKey(name.Lexeme))
             {
-                _interpreter.Resolve(expr, depth);
+                _interpreter.Resolve(expr, distance);
                 return;
             }
         }
@@ -250,9 +255,9 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     }
 
     /// <summary>
-    /// Declares an uninitialized identifier.
+    /// Declares an uninitialized variable.
     /// </summary>
-    /// <param name="name">A token representing the identifier.</param>
+    /// <param name="name">A token with the variable's name.</param>
     private void Declare(Token name)
     {
         if (_scopes.Count == 0) { return; } // global
@@ -269,9 +274,9 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     }
 
     /// <summary>
-    /// Defines an identifier, i.e. marks it as initialized.
+    /// Defines a variable, i.e. marks it as initialized.
     /// </summary>
-    /// <param name="name">A token representing the identifier.</param>
+    /// <param name="name">A token with the variable's name.</param>
     private void Define(Token name)
     {
         if (_scopes.Count == 0) { return; } // global

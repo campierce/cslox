@@ -55,9 +55,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
     }
 
-    public void Resolve(Expr expr, int depth)
+    public void Resolve(Expr expr, int distance)
     {
-        _locals[expr] = depth;
+        _locals[expr] = distance;
     }
     #endregion
 
@@ -85,13 +85,13 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         if (expr.Operator.Type == TokenType.Plus)
         {
-            if (left is double v && right is double v1)
+            if (left is double d1 && right is double d2)
             {
-                return v + v1;
+                return d1 + d2;
             }
-            if (left is string v2 && right is string v3)
+            if (left is string s1 && right is string s2)
             {
-                return v2 + v3;
+                return s1 + s2;
             }
             throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
         }
@@ -119,7 +119,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             TokenType.Minus        => a - b,
             TokenType.Slash        => a / b,
             TokenType.Star         => a * b,
-            _ => new object() // unreachable
+            _ => throw new RuntimeError(expr.Operator, "Unrecognized operator.") // unreachable
         };
         #pragma warning restore format
     }
@@ -213,7 +213,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
                 return -(double)right;
         }
 
-        return new object(); // unreachable
+        throw new RuntimeError(expr.Operator, "Unrecognized operator."); // unreachable
     }
 
     public object VisitVariableExpr(Expr.Variable expr)
@@ -232,8 +232,15 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     public Void VisitClassStmt(Stmt.Class stmt)
     {
         _environment.Define(stmt.Name.Lexeme, Nil.Instance);
-        // ^ later: allows methods to reference their containing class
-        LoxClass @class = new(stmt.Name.Lexeme);
+
+        Dictionary<string, LoxFunction> methods = new();
+        foreach (Stmt.Function method in stmt.Methods)
+        {
+            LoxFunction function = new(method, _environment);
+            methods[method.Name.Lexeme] = function;
+        }
+
+        LoxClass @class = new(stmt.Name.Lexeme, methods);
         _environment.Assign(stmt.Name, @class);
         return default;
     }
