@@ -1,4 +1,4 @@
-namespace Lox.StaticAnalysis;
+namespace Lox;
 
 internal class ResolutionError : Error
 {

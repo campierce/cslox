@@ -1,4 +1,4 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class RuntimeError : Error
 {

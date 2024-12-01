@@ -1,11 +1,8 @@
-using Lox.AST;
-using Lox.Interpreting;
-
-namespace Lox.StaticAnalysis;
+namespace Lox;
 
 internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 {
-    #region Fields
+    #region State
     /// <summary>
     /// The interpreter on which to store the results of this variable resolution pass.
     /// </summary>
@@ -315,7 +312,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         _currentFunction = type;
 
         BeginScope();
-        foreach (Token param in function.Params)
+        foreach (Token param in function.Parameters)
         {
             Declare(param);
             Define(param);

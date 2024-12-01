@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Text;
-using Lox.AST;
 
 namespace Lox;
 
@@ -88,7 +87,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitFunctionStmt(Stmt.Function stmt)
     {
-        return Parenthesize("fun", stmt.Name.Lexeme, "(", stmt.Params, ")", stmt.Body);
+        return Parenthesize("fun", stmt.Name.Lexeme, "(", stmt.Parameters, ")", stmt.Body);
     }
 
     public string VisitIfStmt(Stmt.If stmt)

@@ -1,10 +1,8 @@
-using Lox.AST;
-
-namespace Lox.Parsing;
+namespace Lox;
 
 internal class Parser
 {
-    #region Fields/Properties/Delegates
+    #region State
     private readonly List<Token> _tokens;
 
     private int _current;
@@ -29,7 +27,7 @@ internal class Parser
     {
         // program → declaration* EOF ;
 
-        List<Stmt> statements = new();
+        List<Stmt> statements = [];
         while (!IsAtEnd)
         {
             try
@@ -312,7 +310,7 @@ internal class Parser
         Token name = Consume(TokenType.Identifier, "Expect class name.");
         Consume(TokenType.LeftBrace, "Expect '{' before class body.");
 
-        List<Stmt.Function> methods = new();
+        List<Stmt.Function> methods = [];
         while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             methods.Add(Function("method"));
@@ -330,7 +328,7 @@ internal class Parser
         Token name = Consume(TokenType.Identifier, $"Expect {kind} name.");
         Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
 
-        List<Token> parameters = new();
+        List<Token> parameters = [];
         if (!Check(TokenType.RightParen))
         {
             parameters = Parameters();
@@ -436,7 +434,7 @@ internal class Parser
         // evaluate the increment after the body
         if (increment is not null)
         {
-            body = new Stmt.Block(new List<Stmt> { body, new Stmt.Expression(increment) });
+            body = new Stmt.Block([body, new Stmt.Expression(increment)]);
         }
 
         // make sure there's a condition
@@ -448,7 +446,7 @@ internal class Parser
         // run the initializer once, before the loop
         if (initializer is not null)
         {
-            body = new Stmt.Block(new List<Stmt> { initializer, body });
+            body = new Stmt.Block([initializer, body]);
         }
 
         return body;
@@ -519,7 +517,7 @@ internal class Parser
     {
         // block → "{" declaration* "}" ;
 
-        List<Stmt> statements = new();
+        List<Stmt> statements = [];
         while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             statements.Add(Declaration());
@@ -590,7 +588,7 @@ internal class Parser
     {
         // itemList → item ( "," item )* ;
 
-        List<TItem> items = new();
+        List<TItem> items = [];
 
         if (!Check(TokenType.RightParen))
         {

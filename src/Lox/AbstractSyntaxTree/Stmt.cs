@@ -1,4 +1,4 @@
-namespace Lox.AST;
+namespace Lox;
 
 // Generated code; see AstGenerator to make changes.
 internal abstract class Stmt
@@ -76,13 +76,13 @@ internal abstract class Stmt
     internal class Function : Stmt
     {
         public Token Name { get; }
-        public List<Token> Params { get; }
+        public List<Token> Parameters { get; }
         public Block Body { get; }
 
-        public Function(Token name, List<Token> @params, Block body)
+        public Function(Token name, List<Token> parameters, Block body)
         {
             Name = name;
-            Params = @params;
+            Parameters = parameters;
             Body = body;
         }
 

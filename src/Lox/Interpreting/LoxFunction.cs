@@ -1,6 +1,4 @@
-using Lox.AST;
-
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class LoxFunction : ICallable
 {
@@ -8,7 +6,7 @@ internal class LoxFunction : ICallable
 
     private readonly Environment _closure;
 
-    public int Arity => _declaration.Params.Count;
+    public int Arity => _declaration.Parameters.Count;
 
     public LoxFunction(Stmt.Function declaration, Environment closure)
     {
@@ -22,7 +20,7 @@ internal class LoxFunction : ICallable
         Environment environment = new(_closure);
 
         // bind parameters to their arguments
-        foreach (var (i, param) in _declaration.Params.Enumerate())
+        foreach (var (i, param) in _declaration.Parameters.Enumerate())
         {
             environment.Define(param.Lexeme, arguments[i]);
         }

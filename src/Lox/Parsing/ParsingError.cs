@@ -1,4 +1,4 @@
-namespace Lox.Parsing;
+namespace Lox;
 
 internal class ParsingError : Error
 {

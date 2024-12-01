@@ -1,8 +1,8 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class Environment
 {
-    #region Fields/Properties
+    #region State
     /// <summary>
     /// Maps variable names to their values.
     /// </summary>

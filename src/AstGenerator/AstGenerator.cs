@@ -4,7 +4,7 @@ public class AstGenerator
 {
     /// <summary>
     /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
-    /// e.g., to create an "Operator" property despite "operator" being a reserved keyword.
+    /// e.g., to create an `Operator` property despite `operator` being a reserved keyword.
     /// </summary>
     private const char escapePrefix = '@';
 
@@ -19,7 +19,7 @@ public class AstGenerator
         string outputDir = args[0];
         if (!Directory.Exists(outputDir))
         {
-            Console.Error.WriteLine("Directory does not exist.");
+            Console.Error.WriteLine($"Directory '{outputDir}' does not exist.");
             Environment.Exit(64);
         }
 
@@ -27,8 +27,7 @@ public class AstGenerator
         DefineAst(
             outputDir,
             "Expr",
-            new List<string>
-            {
+            [
                 "Assign   : Variable target, Expr value",
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Call     : Expr callee, Token paren, List<Expr> arguments",
@@ -39,25 +38,24 @@ public class AstGenerator
                 $"Set     : Expr {escapePrefix}object, Token name, Expr value",
                 $"Unary   : Token {escapePrefix}operator, Expr right",
                 "Variable : Token name"
-            }
+            ]
         );
 
         // define statement types
         DefineAst(
             outputDir,
             "Stmt",
-            new List<string>
-            {
+            [
                 "Block      : List<Stmt> statements",
                 "Class      : Token name, List<Function> methods",
                 "Expression : Expr innerExpression",
-                $"Function  : Token name, List<Token> {escapePrefix}params, Block body",
+                $"Function  : Token name, List<Token> parameters, Block body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr content",
                 "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
                 "While      : Expr condition, Stmt body"
-            }
+            ]
         );
     }
 
@@ -67,7 +65,7 @@ public class AstGenerator
         IndentableStringBuilder sb = new();
 
         // top of file
-        sb.AppendLine("namespace Lox.AST;");
+        sb.AppendLine("namespace Lox;");
         sb.AppendLine();
 
         // abstract base class

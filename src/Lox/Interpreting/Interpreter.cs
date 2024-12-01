@@ -1,10 +1,8 @@
-using Lox.AST;
-
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
-    #region Fields/Properties
+    #region State
     private readonly Environment _globals;
 
     private Environment _environment;
@@ -21,7 +19,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         _globals = new();
         _environment = _globals;
-        _locals = new();
+        _locals = [];
 
         // define native functions
         _globals.Define("clock", new Clock());
@@ -365,8 +363,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     private static string? Stringify(object obj)
     {
-        if (obj is bool b) // C# wants to capitalize this, but Lox does not
+        if (obj is bool b)
         {
+            // C# wants to capitalize this, but Lox does not
             return b.ToString().ToLower();
         }
 

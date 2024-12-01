@@ -1,8 +1,8 @@
-namespace Lox.Scanning;
+namespace Lox;
 
 internal class Scanner
 {
-    #region Fields/Properties
+    #region State
     /// <summary>
     /// The source text to be scanned.
     /// </summary>

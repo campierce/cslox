@@ -1,18 +1,15 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text;
-using Lox.AST;
-using Lox.Interpreting;
-using Lox.Scanning;
-using Lox.StaticAnalysis;
-using Parser = Lox.Parsing.Parser;
 
 namespace Lox;
 
 public class Lox
 {
-    #region Fields
+    #region State
     private static readonly Interpreter _interpreter = new();
+
+    private static readonly AstPrinter _printer = new();
 
     private static bool _hadError = false;
 
@@ -28,24 +25,23 @@ public class Lox
         Argument<FileInfo?> scriptArgument = new(
             name: "script",
             parse: GetFileFromArgument,
-            isDefault: false,
             description: "Script to run; if omitted, enter interactive mode.")
         {
             Arity = ArgumentArity.ZeroOrOne
         };
 
-        Option<bool> debugOption = new(
-            aliases: new string[] { "-p", "--print" },
+        Option<bool> isPrintModeOption = new(
+            aliases: ["-p", "--print"],
             description: "Print the syntax tree instead of executing it.");
 
         rootCommand.AddArgument(scriptArgument);
-        rootCommand.AddOption(debugOption);
+        rootCommand.AddOption(isPrintModeOption);
 
-        rootCommand.SetHandler((script, debug) =>
+        rootCommand.SetHandler((script, isPrintMode) =>
             {
                 try
                 {
-                    _isPrintMode = debug;
+                    _isPrintMode = isPrintMode;
                     if (script is null)
                     {
                         RunPrompt();
@@ -62,7 +58,7 @@ public class Lox
                 }
             },
             scriptArgument,
-            debugOption);
+            isPrintModeOption);
 
         await rootCommand.InvokeAsync(args);
     }
@@ -109,7 +105,7 @@ public class Lox
         {
             Console.Write("> ");
             string? line = reader.ReadLine();
-            if (line is null) // ctrl + d = end of input
+            if (line is null) // ctrl + d
             {
                 break;
             }
@@ -144,10 +140,9 @@ public class Lox
 
         if (_isPrintMode)
         {
-            AstPrinter printer = new();
             foreach (Stmt statement in statements)
             {
-                Console.WriteLine(printer.Print(statement));
+                Console.WriteLine(_printer.Print(statement));
             }
             return;
         }

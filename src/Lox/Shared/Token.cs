@@ -6,12 +6,12 @@ internal class Token
     /// The token's type.
     /// </summary>
     public TokenType Type { get; }
-    
+
     /// <summary>
     /// The snippet of source text from which the token was derived.
     /// </summary>
     public string Lexeme { get; }
-    
+
     /// <summary>
     /// The literal value (string or number) represented by the lexeme, if applicable.
     /// </summary>
