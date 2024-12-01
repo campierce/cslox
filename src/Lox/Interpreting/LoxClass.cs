@@ -27,6 +27,6 @@ internal class LoxClass : ICallable
 
     public override string ToString()
     {
-        return Name;
+        return $"{Name} class";
     }
 }

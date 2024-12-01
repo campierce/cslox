@@ -103,7 +103,7 @@ public class Lox
 
     private static void RunPrompt()
     {
-        using StreamReader reader = new(Console.OpenStandardInput());
+        TextReader reader = Console.In;
 
         while (true)
         {
@@ -120,7 +120,8 @@ public class Lox
 
     private static void RunFile(string path)
     {
-        Run(File.ReadAllText(path, Encoding.UTF8));
+        string source = File.ReadAllText(path, Encoding.UTF8);
+        Run(source);
 
         if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
         if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE

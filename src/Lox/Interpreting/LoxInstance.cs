@@ -34,6 +34,6 @@ internal class LoxInstance
 
     public override string ToString()
     {
-        return _class.Name + " instance";
+        return $"{_class.Name} instance";
     }
 }
