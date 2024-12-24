@@ -1,10 +1,12 @@
-﻿namespace Lox.Tools;
+﻿using System.Globalization;
+
+namespace Lox.Tools;
 
 public class AstGenerator
 {
     /// <summary>
     /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
-    /// e.g., to create an "Operator" property despite "operator" being a reserved keyword.
+    /// e.g., to create an `Operator` property despite `operator` being a reserved keyword.
     /// </summary>
     private const char escapePrefix = '@';
 
@@ -19,7 +21,7 @@ public class AstGenerator
         string outputDir = args[0];
         if (!Directory.Exists(outputDir))
         {
-            Console.Error.WriteLine("Directory does not exist.");
+            Console.Error.WriteLine($"Directory '{outputDir}' does not exist.");
             Environment.Exit(64);
         }
 
@@ -27,9 +29,8 @@ public class AstGenerator
         DefineAst(
             outputDir,
             "Expr",
-            new List<string>
-            {
-                "Assign   : Variable target, Expr value",
+            [
+                "Assign   : Token name, Expr value",
                 $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
                 "Call     : Expr callee, Token paren, List<Expr> arguments",
                 $"Get     : Expr {escapePrefix}object, Token name",
@@ -39,25 +40,24 @@ public class AstGenerator
                 $"Set     : Expr {escapePrefix}object, Token name, Expr value",
                 $"Unary   : Token {escapePrefix}operator, Expr right",
                 "Variable : Token name"
-            }
+            ]
         );
 
         // define statement types
         DefineAst(
             outputDir,
             "Stmt",
-            new List<string>
-            {
+            [
                 "Block      : List<Stmt> statements",
                 "Class      : Token name, List<Function> methods",
-                "Expression : Expr innerExpression",
-                $"Function  : Token name, List<Token> {escapePrefix}params, Block body",
+                "Expression : Expr expr",
+                $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
-                "Print      : Expr content",
+                "Print      : Expr expr",
                 "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
                 "While      : Expr condition, Stmt body"
-            }
+            ]
         );
     }
 
@@ -67,7 +67,7 @@ public class AstGenerator
         IndentableStringBuilder sb = new();
 
         // top of file
-        sb.AppendLine("namespace Lox.AST;");
+        sb.AppendLine("namespace Lox;");
         sb.AppendLine();
 
         // abstract base class
@@ -82,16 +82,15 @@ public class AstGenerator
 
         // visitor interface
         DefineVisitor(sb, baseName, types);
-        sb.AppendLine();
 
         // concrete subclasses
         foreach (string type in types)
         {
+            sb.AppendLine();
             string className = type.Split(':')[0].Trim();
             string paramList = type.Split(':')[1].Trim();
             DefineType(sb, baseName, className, paramList);
         }
-        sb.RetractLastLine(); // remove the last newline
 
         // done
         sb.Outdent();
@@ -145,7 +144,6 @@ public class AstGenerator
         // done
         sb.Outdent();
         sb.AppendLine("}");
-        sb.AppendLine();
     }
 
     private static void DefineVisitor(
@@ -153,19 +151,19 @@ public class AstGenerator
     {
         // nested interface
         sb.AppendLine("internal interface IVisitor<T>");
-        sb.AppendLine("{");
+        sb.Append("{");
         sb.Indent();
 
         // methods
         foreach (string type in types)
         {
-            string className = type.Split(':')[0].Trim();
-            sb.AppendLine($"T Visit{className}{baseName}({className} {baseName.ToLower()});");
             sb.AppendLine();
+            string className = type.Split(':')[0].Trim();
+            string paramName = baseName.ToLower(CultureInfo.InvariantCulture);
+            sb.AppendLine($"T Visit{className}{baseName}({className} {paramName});");
         }
 
         // done
-        sb.RetractLastLine(); // remove the last newline
         sb.Outdent();
         sb.AppendLine("}");
     }
@@ -178,12 +176,8 @@ public class AstGenerator
         {
             source = source[1..];
         }
-        return Capitalize(source);
-    }
-
-    private static string Capitalize(string source)
-    {
-        return source[0].ToString().ToUpper() + source[1..];
+        string first = source[0].ToString().ToUpper(CultureInfo.InvariantCulture);
+        return $"{first}{source[1..]}";
     }
     #endregion
 }

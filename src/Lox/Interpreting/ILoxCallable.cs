@@ -1,6 +1,6 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
-internal interface ICallable
+internal interface ILoxCallable
 {
     int Arity { get; }
 

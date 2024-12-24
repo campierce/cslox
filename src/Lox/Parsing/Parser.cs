@@ -1,10 +1,8 @@
-using Lox.AST;
-
-namespace Lox.Parsing;
+namespace Lox;
 
 internal class Parser
 {
-    #region Fields/Properties/Delegates
+    #region State
     private readonly List<Token> _tokens;
 
     private int _current;
@@ -13,10 +11,10 @@ internal class Parser
 
     private delegate Expr BinaryLikeExprOperand();
 
-    private delegate TItem ListItemConsumer<TItem>();
+    private delegate TItem ItemConsumer<TItem>();
     #endregion
 
-    #region Constructors
+    #region Constructor
     public Parser(List<Token> tokens)
     {
         _tokens = tokens;
@@ -29,16 +27,16 @@ internal class Parser
     {
         // program → declaration* EOF ;
 
-        List<Stmt> statements = new();
+        List<Stmt> statements = [];
         while (!IsAtEnd)
         {
             try
             {
                 statements.Add(Declaration());
             }
-            catch (ParsingError)
+            catch (ParseError)
             {
-                // parsing error means we won't try to interpret the statements
+                // parse error means we won't try to interpret the statements
                 // but we should recover and keep parsing, to see what else we find
                 Synchronize();
             }
@@ -137,8 +135,7 @@ internal class Parser
 
     private Expr Assignment()
     {
-        // assignment → ( call "." )? IDENTIFIER "=" assignment
-        //            | logicOr ;
+        // assignment → ( call "." )? IDENTIFIER "=" assignment | logicOr ;
 
         Expr expr = Or();
 
@@ -149,7 +146,7 @@ internal class Parser
 
             if (expr is Expr.Variable variable)
             {
-                return new Expr.Assign(variable, value);
+                return new Expr.Assign(variable.Name, value);
             }
             else if (expr is Expr.Get get)
             {
@@ -213,9 +210,9 @@ internal class Parser
 
         if (Match(TokenType.Bang, TokenType.Minus))
         {
-            Token @operator = Previous();
+            Token op = Previous();
             Expr right = Unary();
-            return new Expr.Unary(@operator, right);
+            return new Expr.Unary(op, right);
         }
 
         return Call();
@@ -299,20 +296,20 @@ internal class Parser
 
         #pragma warning disable format
         if (Match(TokenType.Class)) { return ClassDeclaration(); }
-        if (Match(TokenType.Fun))   { return Function("function"); } // funDecl → "fun" function ;
+        if (Match(TokenType.Fun))   { return Function("function"); }
         if (Match(TokenType.Var))   { return VarDeclaration(); }
         return Statement();
         #pragma warning restore format
     }
 
-    private Stmt ClassDeclaration()
+    private Stmt.Class ClassDeclaration()
     {
         // classDecl → "class" IDENTIFIER "{" function* "}" ;
 
         Token name = Consume(TokenType.Identifier, "Expect class name.");
         Consume(TokenType.LeftBrace, "Expect '{' before class body.");
 
-        List<Stmt.Function> methods = new();
+        List<Stmt.Function> methods = [];
         while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             methods.Add(Function("method"));
@@ -325,12 +322,13 @@ internal class Parser
 
     private Stmt.Function Function(string kind)
     {
+        // funDecl → "fun" function ;
         // function → IDENTIFIER "(" parameters? ")" block ;
 
         Token name = Consume(TokenType.Identifier, $"Expect {kind} name.");
         Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
 
-        List<Token> parameters = new();
+        List<Token> parameters = [];
         if (!Check(TokenType.RightParen))
         {
             parameters = Parameters();
@@ -338,7 +336,7 @@ internal class Parser
         Consume(TokenType.RightParen, "Expect ')' after parameters.");
 
         Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
-        Stmt.Block body = Block();
+        List<Stmt> body = Block();
 
         return new Stmt.Function(name, parameters, body);
     }
@@ -352,7 +350,7 @@ internal class Parser
         );
     }
 
-    private Stmt VarDeclaration()
+    private Stmt.Var VarDeclaration()
     {
         // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
 
@@ -388,16 +386,16 @@ internal class Parser
         if (Match(TokenType.Print))     { return PrintStatement(); }
         if (Match(TokenType.Return))    { return ReturnStatement(); }
         if (Match(TokenType.While))     { return WhileStatement(); }
-        if (Match(TokenType.LeftBrace)) { return Block(); }
+        if (Match(TokenType.LeftBrace)) { return new Stmt.Block(Block()); }
         return ExpressionStatement();
         #pragma warning restore format
     }
 
     private Stmt ForStatement()
     {
-        // forStmt → "for" "(" ( varDecl | exprStmt | ";" )
-        //           expression? ";"
-        //           expression? ")" statement ;
+        // forStmt → "for"
+        //           "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")"
+        //           statement ;
 
         Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
 
@@ -431,12 +429,12 @@ internal class Parser
 
         Stmt body = Statement();
 
-        // translate ("desugar") to a while loop...
+        // translate/desugar to a while loop...
 
         // evaluate the increment after the body
         if (increment is not null)
         {
-            body = new Stmt.Block(new List<Stmt> { body, new Stmt.Expression(increment) });
+            body = new Stmt.Block([body, new Stmt.Expression(increment)]);
         }
 
         // make sure there's a condition
@@ -448,13 +446,13 @@ internal class Parser
         // run the initializer once, before the loop
         if (initializer is not null)
         {
-            body = new Stmt.Block(new List<Stmt> { initializer, body });
+            body = new Stmt.Block([initializer, body]);
         }
 
         return body;
     }
 
-    private Stmt IfStatement()
+    private Stmt.If IfStatement()
     {
         // ifStmt → "if" "(" expression ")" statement
         //          ( "else" statement )? ;
@@ -474,16 +472,16 @@ internal class Parser
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
-    private Stmt PrintStatement()
+    private Stmt.Print PrintStatement()
     {
         // printStmt → "print" expression ";" ;
 
-        Expr value = Expression();
+        Expr expr = Expression();
         Consume(TokenType.Semicolon, "Expect ';' after value.");
-        return new Stmt.Print(value);
+        return new Stmt.Print(expr);
     }
 
-    private Stmt ReturnStatement()
+    private Stmt.Return ReturnStatement()
     {
         // returnStmt → "return" expression? ";" ;
 
@@ -503,7 +501,7 @@ internal class Parser
         return new Stmt.Return(keyword, value);
     }
 
-    private Stmt WhileStatement()
+    private Stmt.While WhileStatement()
     {
         // whileStmt → "while" "(" expression ")" statement ;
 
@@ -515,21 +513,21 @@ internal class Parser
         return new Stmt.While(condition, body);
     }
 
-    private Stmt.Block Block()
+    private List<Stmt> Block()
     {
         // block → "{" declaration* "}" ;
 
-        List<Stmt> statements = new();
+        List<Stmt> statements = [];
         while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             statements.Add(Declaration());
         }
 
         Consume(TokenType.RightBrace, "Expect '}' after block.");
-        return new Stmt.Block(statements);
+        return statements;
     }
 
-    private Stmt ExpressionStatement()
+    private Stmt.Expression ExpressionStatement()
     {
         // exprStmt → expression ";" ;
 
@@ -540,57 +538,56 @@ internal class Parser
     #endregion
 
     #region Helpers
-    private static ParsingError Error(Token token, string message)
+    private static ParseError Error(Token token, string message)
     {
-        ParsingError error = new(token, message);
-        Lox.Error(error);
-        return error;
+        Lox.Error(token, message);
+        return new ParseError();
     }
 
     /// <summary>
-    /// Parses a "binary-like" expression, i.e. an <see cref="Expr.Binary"/> or
-    /// <see cref="Expr.Logical"/>.
+    /// Parses a "binary-like" expression. In practice, expressions are either
+    /// <see cref="Expr.Binary"/> or <see cref="Expr.Logical"/>.
     /// </summary>
-    /// <typeparam name="TExpr">The concrete type to parse.</typeparam>
+    /// <typeparam name="TExpr">The type to parse.</typeparam>
     /// <param name="operand">A delegate that parses expressions of higher precedence than that
     /// specified by the given operators.</param>
     /// <param name="operators">The operators that are allowed to participate in this binary-like
     /// expression.</param>
     /// <returns>An expression.</returns>
-    private Expr BinaryLikeExpr<TExpr>(
-        BinaryLikeExprOperand operand, params TokenType[] operators
-    ) where TExpr : Expr
+    private Expr BinaryLikeExpr<TExpr>(BinaryLikeExprOperand operand, params TokenType[] operators)
+    where TExpr : Expr
     {
         // binaryLikeExpr → operand ( operators[x] operand )* ;
 
-        // parse expressions of higher precedence
+        // parse expression of higher precedence
         Expr expr = operand();
 
-        // consume operators at the current precedence level
+        // operator at the current precedence level
         while (Match(operators))
         {
-            Token @operator = Previous();
+            Token op = Previous();
+            // again, expression of higher precedence
             Expr right = operand();
             // new expression is left-associative
-            expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, @operator, right)!;
+            expr = (TExpr)Activator.CreateInstance(typeof(TExpr), expr, op, right)!;
         }
 
         return expr;
     }
 
     /// <summary>
-    /// Parses a comma-separated list of items, i.e. <see cref="Stmt.Function.Params"/> or
-    /// <see cref="Expr.Call.Arguments"/>.
+    /// Parses a comma-separated list of items. In practice, items are either
+    /// <see cref="Stmt.Function.Params"/> or <see cref="Expr.Call.Arguments"/>.
     /// </summary>
-    /// <typeparam name="TItem">The type of items.</typeparam>
-    /// <param name="kind">The name of the collection of items.</param>
+    /// <typeparam name="TItem">The item type.</typeparam>
+    /// <param name="kind">The item name, plural.</param>
     /// <param name="consumer">A delegate that knows how to parse an item.</param>
     /// <returns>A list of items.</returns>
-    private List<TItem> ItemList<TItem>(string kind, ListItemConsumer<TItem> consumer)
+    private List<TItem> ItemList<TItem>(string kind, ItemConsumer<TItem> consumer)
     {
         // itemList → item ( "," item )* ;
 
-        List<TItem> items = new();
+        List<TItem> items = [];
 
         if (!Check(TokenType.RightParen))
         {

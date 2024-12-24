@@ -1,27 +1,24 @@
 using System.Collections;
 using System.Text;
-using Lox.AST;
 
 namespace Lox;
 
 internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 {
     #region API
-    public string Print(Expr expr)
+    public void Print(List<Stmt> statements)
     {
-        return expr.Accept(this);
-    }
-
-    public string Print(Stmt stmt)
-    {
-        return stmt.Accept(this);
+        foreach (Stmt statement in statements)
+        {
+            Console.WriteLine(statement.Accept(this));
+        }
     }
     #endregion
 
     #region Expr visitor
     public string VisitAssignExpr(Expr.Assign expr)
     {
-        return Parenthesize("=", expr.Target.Name.Lexeme, expr.Value);
+        return Parenthesize("=", expr.Name.Lexeme, expr.Value);
     }
 
     public string VisitBinaryExpr(Expr.Binary expr)
@@ -83,7 +80,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitExpressionStmt(Stmt.Expression stmt)
     {
-        return Parenthesize(";", stmt.InnerExpression);
+        return Parenthesize(";", stmt.Expr);
     }
 
     public string VisitFunctionStmt(Stmt.Function stmt)
@@ -105,7 +102,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitPrintStmt(Stmt.Print stmt)
     {
-        return Parenthesize("print", stmt.Content);
+        return Parenthesize("print", stmt.Expr);
     }
 
     public string VisitReturnStmt(Stmt.Return stmt)
@@ -125,27 +122,39 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     #endregion
 
     #region Helpers
+    /// <summary>
+    /// Transforms the given parts into a parenthesized string whose contents start with the given
+    /// label. If those parts are themselves AST nodes with defined handling, that will be
+    /// respected.
+    /// </summary>
+    /// <param name="label">The label.</param>
+    /// <param name="parts">The parts to transform.</param>
+    /// <returns>A string representation of the parts.</returns>
     private string Parenthesize(string label, params object[] parts)
     {
         StringBuilder sb = new();
 
-        sb.Append($"({label}");
+        sb.Append('(');
+        sb.Append(label);
         Transform(sb, parts);
         sb.Append(')');
 
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Transforms the given parts into strings and appends them.
+    /// </summary>
+    /// <param name="sb">The StringBuilder to which to append.</param>
+    /// <param name="parts">The parts to transform.</param>
     private void Transform(StringBuilder sb, params object[] parts)
     {
         foreach (object part in parts)
         {
+            // recurse on lists before appending, to avoid double-spaces
             if (part is IList list)
             {
-                if (list.Count > 0)
-                {
-                    Transform(sb, list.Cast<object>().ToArray());
-                }
+                Transform(sb, [.. list.Cast<object>()]);
                 continue;
             }
 
@@ -157,13 +166,13 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
                     sb.Append(token.Lexeme);
                     break;
                 case Expr expr:
-                    sb.Append(Print(expr));
+                    sb.Append(expr.Accept(this));
                     break;
                 case Stmt stmt:
-                    sb.Append(Print(stmt));
+                    sb.Append(stmt.Accept(this));
                     break;
                 default:
-                    sb.Append(part);
+                    sb.Append(part.ToString());
                     break;
             }
         }

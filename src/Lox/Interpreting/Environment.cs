@@ -1,8 +1,8 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class Environment
 {
-    #region Fields/Properties
+    #region State
     /// <summary>
     /// Maps variable names to their values.
     /// </summary>
@@ -20,7 +20,7 @@ internal class Environment
     /// </summary>
     public Environment()
     {
-        _values = new();
+        _values = [];
         _enclosing = null;
     }
 
@@ -30,7 +30,7 @@ internal class Environment
     /// <param name="enclosing">The enclosing environment.</param>
     public Environment(Environment enclosing)
     {
-        _values = new();
+        _values = [];
         _enclosing = enclosing;
     }
     #endregion

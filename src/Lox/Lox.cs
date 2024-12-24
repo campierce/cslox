@@ -1,18 +1,15 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text;
-using Lox.AST;
-using Lox.Interpreting;
-using Lox.Scanning;
-using Lox.StaticAnalysis;
-using Parser = Lox.Parsing.Parser;
 
 namespace Lox;
 
 public class Lox
 {
-    #region Fields
+    #region State
     private static readonly Interpreter _interpreter = new();
+
+    private static readonly AstPrinter _printer = new();
 
     private static bool _hadError = false;
 
@@ -28,24 +25,25 @@ public class Lox
         Argument<FileInfo?> scriptArgument = new(
             name: "script",
             parse: GetFileFromArgument,
-            isDefault: false,
-            description: "Script to run; if omitted, enter interactive mode.")
+            description: "Script to run; if omitted, enter interactive mode."
+        )
         {
             Arity = ArgumentArity.ZeroOrOne
         };
 
-        Option<bool> debugOption = new(
-            aliases: new string[] { "-p", "--print" },
-            description: "Print the syntax tree instead of executing it.");
+        Option<bool> isPrintModeOption = new(
+            aliases: ["-p", "--print"],
+            description: "Print the syntax tree instead of executing it."
+        );
 
         rootCommand.AddArgument(scriptArgument);
-        rootCommand.AddOption(debugOption);
+        rootCommand.AddOption(isPrintModeOption);
 
-        rootCommand.SetHandler((script, debug) =>
+        rootCommand.SetHandler((script, isPrintMode) =>
             {
                 try
                 {
-                    _isPrintMode = debug;
+                    _isPrintMode = isPrintMode;
                     if (script is null)
                     {
                         RunPrompt();
@@ -62,28 +60,46 @@ public class Lox
                 }
             },
             scriptArgument,
-            debugOption);
+            isPrintModeOption
+        );
 
         await rootCommand.InvokeAsync(args);
     }
 
     #region API
-    internal static void Error(Error error)
+    public static void Error(int line, string message)
     {
-        if (error is RuntimeError)
+        Report(line, "", message);
+    }
+
+    internal static void Error(Token token, string message)
+    {
+        if (token.Type == TokenType.EOF)
         {
-            _hadRuntimeError = true;
+            Report(token.Line, " at end", message);
         }
         else
         {
-            _hadError = true;
+            Report(token.Line, $" at '{token.Lexeme}'", message);
         }
+    }
 
-        Console.Error.WriteLine($"{error.Line}{error.Type} error{error.Where}: {error.Message}");
+    internal static void RuntimeError(RuntimeError error)
+    {
+        Console.Error.WriteLine(
+            $"{error.Message}{System.Environment.NewLine}[line {error.Token.Line}]"
+        );
+        _hadRuntimeError = true;
     }
     #endregion
 
     #region Helpers
+    private static void Report(int line, string where, string message)
+    {
+        Console.Error.WriteLine($"[line {line}] Error{where}: {message}");
+        _hadError = true;
+    }
+
     private static FileInfo? GetFileFromArgument(ArgumentResult result)
     {
         if (result.Tokens.Count == 0)
@@ -94,6 +110,7 @@ public class Lox
         string? path = result.Tokens.Single().Value;
         if (!File.Exists(path))
         {
+            // hook into the library's error handling
             result.ErrorMessage = $"File '{path}' does not exist";
             return null;
         }
@@ -103,13 +120,13 @@ public class Lox
 
     private static void RunPrompt()
     {
-        using StreamReader reader = new(Console.OpenStandardInput());
+        TextReader reader = Console.In;
 
         while (true)
         {
             Console.Write("> ");
             string? line = reader.ReadLine();
-            if (line is null) // ctrl + d = end of input
+            if (line is null) // ctrl + d
             {
                 break;
             }
@@ -120,7 +137,8 @@ public class Lox
 
     private static void RunFile(string path)
     {
-        Run(File.ReadAllText(path, Encoding.UTF8));
+        string source = File.ReadAllText(path, Encoding.UTF8);
+        Run(source);
 
         if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
         if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
@@ -143,11 +161,7 @@ public class Lox
 
         if (_isPrintMode)
         {
-            AstPrinter printer = new();
-            foreach (Stmt statement in statements)
-            {
-                Console.WriteLine(printer.Print(statement));
-            }
+            _printer.Print(statements);
             return;
         }
 

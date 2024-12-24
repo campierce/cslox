@@ -1,11 +1,13 @@
-using Lox.AST;
-using Lox.Interpreting;
+namespace Lox;
 
-namespace Lox.StaticAnalysis;
-
+/// <summary>
+/// Resolves variables in the AST (i.e., finds where a variable is declared, relative to where it is
+/// used). This allows us to detect some kinds of invalid programs before runtime, and it allows the
+/// interpreter to reuse the same resolution path (which is required for static scope).
+/// </summary>
 internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 {
-    #region Fields
+    #region State
     /// <summary>
     /// The interpreter on which to store the results of this variable resolution pass.
     /// </summary>
@@ -17,7 +19,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// itself).
     /// <para>
     /// Note the concept of an initializer only applies to variable statements, so other usages of
-    /// variables (e.g. a function's name in its declaration) will be considered "initialized" right
+    /// variables (like a function's name in its declaration) will be considered initialized right
     /// away. Tracking all variables like this allows us to prevent name collisions within the same
     /// scope.
     /// </para>
@@ -28,7 +30,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// The function "context" that surrounds the syntax node we are currently visiting; if none,
     /// then we know a return statement is not permitted.
     /// </summary>
-    private FunctionType _currentFunction;
+    private FunctionType _fnContext;
     #endregion
 
     #region Constructors
@@ -40,7 +42,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         _interpreter = interpreter;
         _scopes = new();
-        _currentFunction = FunctionType.None;
+        _fnContext = FunctionType.None;
     }
     #endregion
 
@@ -59,7 +61,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     public Void VisitAssignExpr(Expr.Assign expr)
     {
         Resolve(expr.Value);
-        ResolveLocal(expr, expr.Target.Name);
+        ResolveLocal(expr, expr.Name);
         return default;
     }
 
@@ -116,13 +118,11 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitVariableExpr(Expr.Variable expr)
     {
-        if (_scopes.Count != 0
+        if (_scopes.Count != 0 // not global
             && _scopes.Peek().TryGetValue(expr.Name.Lexeme, out bool value) // declared
             && !value) // but not yet defined
         {
-            Lox.Error(
-                new ResolutionError(expr.Name, "Can't read local variable in its own initializer.")
-            );
+            Lox.Error(expr.Name, "Can't read local variable in its own initializer.");
         }
 
         ResolveLocal(expr, expr.Name);
@@ -155,7 +155,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitExpressionStmt(Stmt.Expression stmt)
     {
-        Resolve(stmt.InnerExpression);
+        Resolve(stmt.Expr);
         return default;
     }
 
@@ -181,17 +181,15 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitPrintStmt(Stmt.Print stmt)
     {
-        Resolve(stmt.Content);
+        Resolve(stmt.Expr);
         return default;
     }
 
     public Void VisitReturnStmt(Stmt.Return stmt)
     {
-        if (_currentFunction == FunctionType.None)
+        if (_fnContext == FunctionType.None)
         {
-            Lox.Error(
-                new ResolutionError(stmt.Keyword, "Can't return from top-level code.")
-            );
+            Lox.Error(stmt.Keyword, "Can't return from top-level code.");
         }
 
         Resolve(stmt.Value);
@@ -219,13 +217,12 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// Resolves a local variable within the interpreter, by finding the number of environments
     /// between that variable's usage and its declaration (its "distance").
     /// </summary>
-    /// <param name="expr">The (assignment or variable) expression in which the variable is used.
-    /// </param>
+    /// <param name="expr">The assignment/variable expression in which the variable is used.</param>
     /// <param name="name">A token containing the name of the variable.</param>
     private void ResolveLocal(Expr expr, Token name)
     {
         // walk from inner to outermost scope
-        foreach (var (distance, scope) in _scopes.Enumerate())
+        foreach ((int distance, Dictionary<string, bool> scope) in _scopes.Enumerate())
         {
             // if we find the variable, pass its distance to the interpreter
             if (scope.ContainsKey(name.Lexeme))
@@ -234,6 +231,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
                 return;
             }
         }
+        // if we didn't find it, assume it's global; will be handled at runtime
     }
     #endregion
 
@@ -243,7 +241,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// </summary>
     private void BeginScope()
     {
-        _scopes.Push(new());
+        _scopes.Push([]);
     }
 
     /// <summary>
@@ -265,16 +263,14 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         Dictionary<string, bool> scope = _scopes.Peek();
         if (scope.ContainsKey(name.Lexeme))
         {
-            Lox.Error(
-                new ResolutionError(name, "Already a variable with this name in this scope.")
-            );
+            Lox.Error(name, "Already a variable with this name in this scope.");
         }
 
         scope[name.Lexeme] = false; // uninitialized
     }
 
     /// <summary>
-    /// Defines a variable, i.e. marks it as initialized.
+    /// Defines a variable (i.e., marks it as initialized).
     /// </summary>
     /// <param name="name">A token with the variable's name.</param>
     private void Define(Token name)
@@ -311,8 +307,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// <param name="type">The type of function.</param>
     private void ResolveFunction(Stmt.Function function, FunctionType type)
     {
-        FunctionType enclosingFunction = _currentFunction;
-        _currentFunction = type;
+        FunctionType enclosingFnContext = _fnContext;
+        _fnContext = type;
 
         BeginScope();
         foreach (Token param in function.Params)
@@ -323,7 +319,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         Resolve(function.Body);
         EndScope();
 
-        _currentFunction = enclosingFunction;
+        _fnContext = enclosingFnContext;
     }
     #endregion Helpers
 }

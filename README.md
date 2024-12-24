@@ -1,3 +1,3 @@
 # cslox
 
-A tree-walk intepreter for the Lox programming language, implemented in C#, based on the Java-based jlox example in [Crafting Interpreters](https://craftinginterpreters.com/).
+A C# implementation of the Lox programming language, based on the jlox tree-walk interpreter from [Crafting Interpreters](https://craftinginterpreters.com/).

@@ -1,4 +1,4 @@
-namespace Lox.AST;
+namespace Lox;
 
 // Generated code; see AstGenerator to make changes.
 internal abstract class Stmt
@@ -60,11 +60,11 @@ internal abstract class Stmt
 
     internal class Expression : Stmt
     {
-        public Expr InnerExpression { get; }
+        public Expr Expr { get; }
 
-        public Expression(Expr innerExpression)
+        public Expression(Expr expr)
         {
-            InnerExpression = innerExpression;
+            Expr = expr;
         }
 
         public override T Accept<T>(IVisitor<T> visitor)
@@ -77,9 +77,9 @@ internal abstract class Stmt
     {
         public Token Name { get; }
         public List<Token> Params { get; }
-        public Block Body { get; }
+        public List<Stmt> Body { get; }
 
-        public Function(Token name, List<Token> @params, Block body)
+        public Function(Token name, List<Token> @params, List<Stmt> body)
         {
             Name = name;
             Params = @params;
@@ -113,11 +113,11 @@ internal abstract class Stmt
 
     internal class Print : Stmt
     {
-        public Expr Content { get; }
+        public Expr Expr { get; }
 
-        public Print(Expr content)
+        public Print(Expr expr)
         {
-            Content = content;
+            Expr = expr;
         }
 
         public override T Accept<T>(IVisitor<T> visitor)

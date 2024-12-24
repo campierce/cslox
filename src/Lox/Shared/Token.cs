@@ -6,12 +6,12 @@ internal class Token
     /// The token's type.
     /// </summary>
     public TokenType Type { get; }
-    
+
     /// <summary>
     /// The snippet of source text from which the token was derived.
     /// </summary>
     public string Lexeme { get; }
-    
+
     /// <summary>
     /// The literal value (string or number) represented by the lexeme, if applicable.
     /// </summary>
@@ -21,6 +21,11 @@ internal class Token
     /// The line in the source text from which the token was derived.
     /// </summary>
     public int Line { get; }
+
+    /// <summary>
+    /// A display-friendly version of this token's lexeme.
+    /// </summary>
+    public string DisplayLexeme => Type == TokenType.EOF ? "end" : $"'{Lexeme}'";
 
     /// <summary>
     /// Creates a new Token.
@@ -36,6 +41,4 @@ internal class Token
         Literal = literal;
         Line = line;
     }
-
-    public override string ToString() => $"{Type} {Lexeme} {Literal}";
 }

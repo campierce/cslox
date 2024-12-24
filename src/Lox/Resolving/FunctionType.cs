@@ -1,4 +1,4 @@
-namespace Lox.StaticAnalysis;
+namespace Lox;
 
 internal enum FunctionType
 {

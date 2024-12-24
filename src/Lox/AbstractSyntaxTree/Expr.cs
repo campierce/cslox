@@ -1,4 +1,4 @@
-namespace Lox.AST;
+namespace Lox;
 
 // Generated code; see AstGenerator to make changes.
 internal abstract class Expr
@@ -30,12 +30,12 @@ internal abstract class Expr
 
     internal class Assign : Expr
     {
-        public Variable Target { get; }
+        public Token Name { get; }
         public Expr Value { get; }
 
-        public Assign(Variable target, Expr value)
+        public Assign(Token name, Expr value)
         {
-            Target = target;
+            Name = name;
             Value = value;
         }
 

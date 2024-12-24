@@ -1,8 +1,6 @@
-using Lox.AST;
+namespace Lox;
 
-namespace Lox.Interpreting;
-
-internal class LoxFunction : ICallable
+internal class LoxFunction : ILoxCallable
 {
     private readonly Stmt.Function _declaration;
 
@@ -22,7 +20,7 @@ internal class LoxFunction : ICallable
         Environment environment = new(_closure);
 
         // bind parameters to their arguments
-        foreach (var (i, param) in _declaration.Params.Enumerate())
+        foreach ((int i, Token param) in _declaration.Params.Enumerate())
         {
             environment.Define(param.Lexeme, arguments[i]);
         }

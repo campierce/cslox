@@ -1,4 +1,4 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class LoxInstance
 {
@@ -6,10 +6,10 @@ internal class LoxInstance
 
     private readonly Dictionary<string, object> _fields;
 
-    public LoxInstance(LoxClass @class)
+    public LoxInstance(LoxClass cls)
     {
-        _class = @class;
-        _fields = new();
+        _class = cls;
+        _fields = [];
     }
 
     public object Get(Token name)
@@ -34,6 +34,6 @@ internal class LoxInstance
 
     public override string ToString()
     {
-        return _class.Name + " instance";
+        return $"{_class.Name} instance";
     }
 }

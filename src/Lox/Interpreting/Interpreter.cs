@@ -1,10 +1,10 @@
-using Lox.AST;
+using System.Globalization;
 
-namespace Lox.Interpreting;
+namespace Lox;
 
 internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
-    #region Fields/Properties
+    #region State
     private readonly Environment _globals;
 
     private Environment _environment;
@@ -16,12 +16,12 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     private readonly Dictionary<Expr, int> _locals;
     #endregion
 
-    #region Constructors
+    #region Constructor
     public Interpreter()
     {
         _globals = new();
         _environment = _globals;
-        _locals = new();
+        _locals = [];
 
         // define native functions
         _globals.Define("clock", new Clock());
@@ -37,17 +37,17 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
         catch (RuntimeError error)
         {
-            Lox.Error(error);
+            Lox.RuntimeError(error);
         }
     }
 
-    public void ExecuteBlock(Stmt.Block block, Environment environment)
+    public void ExecuteBlock(List<Stmt> statements, Environment environment)
     {
         Environment previous = _environment;
         try
         {
             _environment = environment;
-            block.Statements.ForEach(Execute);
+            statements.ForEach(Execute);
         }
         finally
         {
@@ -68,11 +68,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         if (_locals.TryGetValue(expr, out int distance))
         {
-            _environment.AssignAt(distance, expr.Target.Name, value);
+            _environment.AssignAt(distance, expr.Name, value);
         }
         else
         {
-            _globals.Assign(expr.Target.Name, value);
+            _globals.Assign(expr.Name, value);
         }
 
         return value;
@@ -128,13 +128,13 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         object callee = Evaluate(expr.Callee);
 
-        List<object> arguments = new();
+        List<object> arguments = [];
         foreach (Expr argument in expr.Arguments)
         {
             arguments.Add(Evaluate(argument));
         }
 
-        if (callee is ICallable function)
+        if (callee is ILoxCallable function)
         {
             if (arguments.Count != function.Arity)
             {
@@ -225,7 +225,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #region Stmt visitor
     public Void VisitBlockStmt(Stmt.Block stmt)
     {
-        ExecuteBlock(stmt, new Environment(_environment));
+        ExecuteBlock(stmt.Statements, new Environment(_environment));
         return default;
     }
 
@@ -233,21 +233,21 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         _environment.Define(stmt.Name.Lexeme, Nil.Instance);
 
-        Dictionary<string, LoxFunction> methods = new();
+        Dictionary<string, LoxFunction> methods = [];
         foreach (Stmt.Function method in stmt.Methods)
         {
             LoxFunction function = new(method, _environment);
             methods[method.Name.Lexeme] = function;
         }
 
-        LoxClass @class = new(stmt.Name.Lexeme, methods);
-        _environment.Assign(stmt.Name, @class);
+        LoxClass cls = new(stmt.Name.Lexeme, methods);
+        _environment.Assign(stmt.Name, cls);
         return default;
     }
 
     public Void VisitExpressionStmt(Stmt.Expression stmt)
     {
-        Evaluate(stmt.InnerExpression);
+        Evaluate(stmt.Expr);
         return default;
     }
 
@@ -273,7 +273,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitPrintStmt(Stmt.Print stmt)
     {
-        object value = Evaluate(stmt.Content);
+        object value = Evaluate(stmt.Expr);
         Console.WriteLine(Stringify(value));
         return default;
     }
@@ -345,29 +345,30 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         return a.Equals(b);
     }
 
-    private static void CheckNumberOperand(Token @operator, object operand)
+    private static void CheckNumberOperand(Token op, object operand)
     {
         if (operand is double)
         {
             return;
         }
-        throw new RuntimeError(@operator, "Operand must be a number.");
+        throw new RuntimeError(op, "Operand must be a number.");
     }
 
-    private static void CheckNumberOperands(Token @operator, object left, object right)
+    private static void CheckNumberOperands(Token op, object left, object right)
     {
         if (left is double && right is double)
         {
             return;
         }
-        throw new RuntimeError(@operator, "Operands must be numbers.");
+        throw new RuntimeError(op, "Operands must be numbers.");
     }
 
     private static string? Stringify(object obj)
     {
-        if (obj is bool b) // C# wants to capitalize this, but Lox does not
+        if (obj is bool b)
         {
-            return b.ToString().ToLower();
+            // C# wants to capitalize this, but Lox does not
+            return b.ToString().ToLower(CultureInfo.InvariantCulture);
         }
 
         return obj.ToString();

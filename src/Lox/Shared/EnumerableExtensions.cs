@@ -1,6 +1,6 @@
 namespace Lox;
 
-static class EnumerableExtensions
+internal static class EnumerableExtensions
 {
     /// <summary>
     /// Enumerates (index, item) pairs of an <see cref="IEnumerable{T}"/>.

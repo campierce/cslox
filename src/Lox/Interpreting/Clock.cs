@@ -1,6 +1,6 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
-internal class Clock : ICallable
+internal class Clock : ILoxCallable
 {
     public int Arity => 0;
 

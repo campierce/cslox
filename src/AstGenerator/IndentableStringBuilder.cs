@@ -1,54 +1,81 @@
-namespace Lox.Tools;
-
 using System.Text;
+
+namespace Lox.Tools;
 
 public class IndentableStringBuilder
 {
+    /// <summary>
+    /// The backing StringBuilder.
+    /// </summary>
     private readonly StringBuilder _sb = new();
-    private readonly int _newlineLength = Environment.NewLine.Length;
-    private readonly int _width = 4;
-    private int _spaces = 0;
 
+    /// <summary>
+    /// The number of spaces per indent.
+    /// </summary>
+    private readonly int _indentWidth = 4;
+
+    /// <summary>
+    /// The number of spaces in the active indent.
+    /// </summary>
+    private int _activeIndent = 0;
+
+    /// <summary>
+    /// Whether to indent at the next opportunity.
+    /// </summary>
+    private bool _needsIndent = true;
+
+    /// <summary>
+    /// Increments the indent.
+    /// </summary>
     public void Indent()
     {
-        _spaces += _width;
+        _activeIndent += _indentWidth;
     }
 
+    /// <summary>
+    /// Decrements the indent.
+    /// </summary>
     public void Outdent()
     {
-        if (_spaces >= _width)
+        if (_activeIndent >= _indentWidth)
         {
-            _spaces -= _width;
+            _activeIndent -= _indentWidth;
         }
     }
 
-    public void RetractLastLine()
-    {
-        if (_sb.Length >= _newlineLength)
-        {
-            _sb.Length -= _newlineLength;
-        }
-    }
-
+    /// <summary>
+    /// Appends the indent if needed (i.e., if this is the first append on the current line), and
+    /// then appends the given string.
+    /// </summary>
+    /// <param name="value">The string to append.</param>
     public void Append(string value)
     {
+        if (_needsIndent)
+        {
+            _sb.Append(new string(' ', _activeIndent));
+            _needsIndent = false;
+        }
         _sb.Append(value);
     }
 
+    /// <summary>
+    /// Appends the given string, and then appends a new line.
+    /// </summary>
+    /// <param name="value">The string to append.</param>
     public void AppendLine(string value)
     {
-        _sb.AppendLine(SpacePrefixed(value));
+        Append(value);
+        AppendLine();
     }
 
+    /// <summary>
+    /// Appends a new line.
+    /// </summary>
     public void AppendLine()
     {
         _sb.AppendLine();
+        _needsIndent = true;
     }
 
     public override string ToString() => _sb.ToString();
-
-    private string SpacePrefixed(string value)
-    {
-        return new string(' ', _spaces) + value;
-    }
 }

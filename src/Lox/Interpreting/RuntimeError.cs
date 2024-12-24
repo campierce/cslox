@@ -1,10 +1,11 @@
-namespace Lox.Interpreting;
+namespace Lox;
 
-internal class RuntimeError : Error
+internal class RuntimeError : Exception
 {
-    public override string Type => "Runtime";
+    public Token Token { get; }
 
-    public RuntimeError(Token token, string message) : base(token, message)
+    public RuntimeError(Token token, string message) : base(message)
     {
+        Token = token;
     }
 }

@@ -1,25 +1,27 @@
-namespace Lox.Scanning;
+using System.Globalization;
+
+namespace Lox;
 
 internal class Scanner
 {
-    #region Fields/Properties
+    #region State
     /// <summary>
     /// The source text to be scanned.
     /// </summary>
     private readonly string _source;
 
     /// <summary>
-    /// Index of the current character.
+    /// The index of the current character.
     /// </summary>
     private int _current;
 
     /// <summary>
-    /// Current line number.
+    /// The current line number.
     /// </summary>
     private int _line;
 
     /// <summary>
-    /// Index of the character that starts the current token.
+    /// The index of the character that starts the current token.
     /// </summary>
     private int _start;
 
@@ -39,7 +41,7 @@ internal class Scanner
     private bool IsAtEnd => _current >= _source.Length;
 
     /// <summary>
-    /// Maps keyword literals to their token types.
+    /// Maps keywords to their token types.
     /// </summary>
     private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
@@ -64,7 +66,7 @@ internal class Scanner
     };
     #endregion
 
-    #region Constructors
+    #region Constructor
     /// <summary>
     /// Creates a new Scanner.
     /// </summary>
@@ -75,7 +77,7 @@ internal class Scanner
         _current = 0;
         _line = 1;
         _start = 0;
-        _tokens = new();
+        _tokens = [];
     }
     #endregion
 
@@ -233,13 +235,13 @@ internal class Scanner
             case '\n':
                 _line++;
                 break;
-            // literal string
+            // string literal
             case '"':
                 String();
                 break;
             // ok, we've exhausted tokens with a distinct first char
             default:
-                // literal number
+                // number literal
                 if (IsDigit(c))
                 {
                     Number();
@@ -251,7 +253,7 @@ internal class Scanner
                 }
                 else
                 {
-                    Error("Unexpected character.");
+                    Lox.Error(_line, "Unexpected character.");
                 }
                 break;
         }
@@ -296,7 +298,7 @@ internal class Scanner
         // if we ran out of road, that's a problem
         if (IsAtEnd)
         {
-            Error("Unterminated string.");
+            Lox.Error(_line, "Unterminated string.");
             return;
         }
 
@@ -333,7 +335,8 @@ internal class Scanner
         }
 
         // parse the number
-        double value = double.Parse(_source.Substring(_start, CurrentLength));
+        string str = _source.Substring(_start, CurrentLength);
+        double value = double.Parse(str, CultureInfo.InvariantCulture);
         // tokenize
         AddToken(TokenType.Number, value);
     }
@@ -366,15 +369,6 @@ internal class Scanner
 
     #region Helpers
     /// <summary>
-    /// Logs a scanning error.
-    /// </summary>
-    /// <param name="message">The error message.</param>
-    private void Error(string message)
-    {
-        Lox.Error(new ScanningError(_line, message));
-    }
-
-    /// <summary>
     /// Decides whether a character is a digit. Supported: [0-9].
     /// </summary>
     /// <param name="c">The character to check</param>
@@ -382,7 +376,7 @@ internal class Scanner
     private static bool IsDigit(char c)
     {
         // char.IsDigit gets fancy with Unicode, so we roll our own
-        return c >= '0' && c <= '9';
+        return c is >= '0' and <= '9';
     }
 
     /// <summary>
