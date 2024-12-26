@@ -309,9 +309,17 @@ internal class Parser
 
     private Stmt.Class ClassDeclaration()
     {
-        // classDecl → "class" IDENTIFIER "{" function* "}" ;
+        // classDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 
         Token name = Consume(TokenType.Identifier, "Expect class name.");
+
+        Expr.Variable? superclass = null;
+        if (Match(TokenType.Less))
+        {
+            Consume(TokenType.Identifier, "Expect superclass name.");
+            superclass = new Expr.Variable(Previous());
+        }
+
         Consume(TokenType.LeftBrace, "Expect '{' before class body.");
 
         List<Stmt.Function> methods = [];
@@ -322,7 +330,7 @@ internal class Parser
 
         Consume(TokenType.RightBrace, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, superclass, methods);
     }
 
     private Stmt.Function Function(string kind)

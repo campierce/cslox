@@ -18,7 +18,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     #region Expr visitor
     public string VisitAssignExpr(Expr.Assign expr)
     {
-        return Parenthesize("=", expr.Name.Lexeme, expr.Value);
+        return Parenthesize("=", expr.Name, expr.Value);
     }
 
     public string VisitBinaryExpr(Expr.Binary expr)
@@ -33,7 +33,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitGetExpr(Expr.Get expr)
     {
-        return Parenthesize(".", expr.Object, expr.Name.Lexeme);
+        return Parenthesize(".", expr.Object, expr.Name);
     }
 
     public string VisitGroupingExpr(Expr.Grouping expr)
@@ -53,7 +53,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitSetExpr(Expr.Set expr)
     {
-        return Parenthesize("=", expr.Object, expr.Name.Lexeme, expr.Value);
+        return Parenthesize("=", expr.Object, expr.Name, expr.Value);
     }
 
     public string VisitThisExpr(Expr.This expr)
@@ -80,7 +80,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitClassStmt(Stmt.Class stmt)
     {
-        return Parenthesize("class", stmt.Name.Lexeme, stmt.Methods);
+        if (stmt.Superclass is null)
+        {
+            return Parenthesize("class", stmt.Name, stmt.Methods);
+        }
+        return Parenthesize("class", stmt.Name, "<", stmt.Superclass, stmt.Methods);
     }
 
     public string VisitExpressionStmt(Stmt.Expression stmt)
@@ -90,7 +94,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitFunctionStmt(Stmt.Function stmt)
     {
-        return Parenthesize("fun", stmt.Name.Lexeme, "(", stmt.Params, ")", stmt.Body);
+        return Parenthesize("fun", stmt.Name, "(", stmt.Params, ")", stmt.Body);
     }
 
     public string VisitIfStmt(Stmt.If stmt)

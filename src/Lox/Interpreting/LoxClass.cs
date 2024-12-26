@@ -6,11 +6,13 @@ internal class LoxClass : ILoxCallable
 
     public string Name { get; }
 
+    public LoxClass Superclass { get; }
+
     public int Arity
     {
         get
         {
-            if (TryGetMethod("init", out LoxFunction? initializer))
+            if (TryFindMethod("init", out LoxFunction? initializer))
             {
                 return initializer!.Arity;
             }
@@ -18,15 +20,26 @@ internal class LoxClass : ILoxCallable
         }
     }
 
-    public LoxClass(string name, Dictionary<string, LoxFunction> methods)
+    public LoxClass(string name, LoxClass superclass, Dictionary<string, LoxFunction> methods)
     {
         Name = name;
+        Superclass = superclass;
         _methods = methods;
     }
 
-    public bool TryGetMethod(string name, out LoxFunction? method)
+    public bool TryFindMethod(string name, out LoxFunction? method)
     {
-        return _methods.TryGetValue(name, out method);
+        if (_methods.TryGetValue(name, out method))
+        {
+            return true;
+        }
+
+        if (Superclass is not null)
+        {
+            return Superclass.TryFindMethod(name, out method);
+        }
+
+        return false;
     }
 
     public object Call(Interpreter interpreter, List<object> arguments)
@@ -34,7 +47,7 @@ internal class LoxClass : ILoxCallable
         LoxInstance instance = new(this);
 
         // if a ctor is defined...
-        if (TryGetMethod("init", out LoxFunction? initializer))
+        if (TryFindMethod("init", out LoxFunction? initializer))
         {
             // give it access to `this`
             LoxFunction ctor = initializer!.Bind(instance);

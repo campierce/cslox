@@ -6,7 +6,7 @@ public class AstGenerator
 {
     /// <summary>
     /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
-    /// e.g., to define an `@operator` parameter and `Operator` property.
+    /// e.g., to define an `@operator` parameter that becomes an `Operator` property.
     /// </summary>
     private const char verbatimPrefix = '@';
 
@@ -50,7 +50,7 @@ public class AstGenerator
             "Stmt",
             [
                 "Block      : List<Stmt> statements",
-                "Class      : Token name, List<Function> methods",
+                "Class      : Token name, Expr.Variable? superclass, List<Function> methods",
                 "Expression : Expr expr",
                 $"Function  : Token name, List<Token> {verbatimPrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",

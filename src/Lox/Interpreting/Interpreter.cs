@@ -235,6 +235,16 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitClassStmt(Stmt.Class stmt)
     {
+        object? superclass = null;
+        if (stmt.Superclass is not null)
+        {
+            superclass = Evaluate(stmt.Superclass);
+            if (superclass is not LoxClass)
+            {
+                throw new RuntimeError(stmt.Superclass.Name, "Superclass must be a class.");
+            }
+        }
+
         _environment.Define(stmt.Name.Lexeme, Nil.Instance);
 
         Dictionary<string, LoxFunction> methods = [];
@@ -245,7 +255,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             methods[method.Name.Lexeme] = function;
         }
 
-        LoxClass cls = new(stmt.Name.Lexeme, methods);
+        LoxClass cls = new(stmt.Name.Lexeme, (LoxClass)superclass!, methods);
         _environment.Assign(stmt.Name, cls);
         return default;
     }

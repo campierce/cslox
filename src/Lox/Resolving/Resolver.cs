@@ -1,9 +1,9 @@
 namespace Lox;
 
 /// <summary>
-/// Resolves variables in the AST (i.e., finds where a variable is declared, relative to where it is
-/// used). This allows us to detect some kinds of invalid programs before runtime, and it allows the
-/// interpreter to reuse the same resolution path (which is required for static scope).
+/// Resolves local variables in the AST (i.e., finds where a variable is declared relative to where
+/// it is used). This allows us to detect some kinds of invalid programs before runtime, and it
+/// allows the interpreter to reuse the same resolution path (which is required for static scope).
 /// </summary>
 internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 {
@@ -16,25 +16,24 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// <summary>
     /// Stack of lexical scopes, each of which maps a variable name to whether we have resolved its
     /// initializer (which allows us to prevent the initializer from referencing the variable
-    /// itself).
+    /// itself). This is how we prevent name collisions within a given scope.
     /// <para>
     /// Note the concept of an initializer only applies to variable statements, so other usages of
     /// variables (like a function's name in its declaration) will be considered initialized right
-    /// away. Tracking all variables like this allows us to prevent name collisions within the same
-    /// scope.
+    /// away.
     /// </para>
     /// </summary>
     private readonly Stack<Dictionary<string, bool>> _scopes;
 
     /// <summary>
-    /// The class "context" that surrounds the syntax node we are currently visiting; if none, then
-    /// we know `this` is not permitted.
+    /// The class "context" that surrounds the syntax node we are currently visiting; if none, we
+    /// know `this` is not permitted.
     /// </summary>
     private ClassType _clsContext;
 
     /// <summary>
-    /// The function "context" that surrounds the syntax node we are currently visiting; if none,
-    /// then we know a return statement is not permitted.
+    /// The function "context" that surrounds the syntax node we are currently visiting; if none, we
+    /// know a return statement is not permitted.
     /// </summary>
     private FunctionType _fnContext;
     #endregion
@@ -48,6 +47,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         _interpreter = interpreter;
         _scopes = new();
+        _clsContext = ClassType.None;
         _fnContext = FunctionType.None;
     }
     #endregion
@@ -164,6 +164,17 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
         Declare(stmt.Name);
         Define(stmt.Name);
+
+        if (stmt.Superclass is not null)
+        {
+            if (stmt.Superclass.Name.Lexeme == stmt.Name.Lexeme)
+            {
+                Lox.Error(stmt.Superclass.Name, "A class can't inherit from itself.");
+            }
+
+            // can declare classes in blocks, so the superclass could be a local variable
+            Resolve(stmt.Superclass);
+        }
 
         // when a method is accessed at runtime, we splice in a closure that binds `this`
         BeginScope(); // must do the same here

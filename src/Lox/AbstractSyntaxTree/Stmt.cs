@@ -44,11 +44,13 @@ internal abstract class Stmt
     internal class Class : Stmt
     {
         public Token Name { get; }
+        public Expr.Variable? Superclass { get; }
         public List<Function> Methods { get; }
 
-        public Class(Token name, List<Function> methods)
+        public Class(Token name, Expr.Variable? superclass, List<Function> methods)
         {
             Name = name;
+            Superclass = superclass;
             Methods = methods;
         }
 

@@ -19,7 +19,7 @@ internal class LoxInstance
             return field;
         }
 
-        if (_class.TryGetMethod(name.Lexeme, out LoxFunction? method))
+        if (_class.TryFindMethod(name.Lexeme, out LoxFunction? method))
         {
             return method!.Bind(this);
         }
