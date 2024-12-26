@@ -28,7 +28,7 @@ internal class Token
     public string DisplayLexeme => Type == TokenType.EOF ? "end" : $"'{Lexeme}'";
 
     /// <summary>
-    /// Creates a new Token.
+    /// Creates a Token.
     /// </summary>
     /// <param name="type">The token's type.</param>
     /// <param name="lexeme">The token's lexeme.</param>

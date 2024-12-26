@@ -16,7 +16,7 @@ internal class Environment
 
     #region Constructors
     /// <summary>
-    /// Creates a new global Environment.
+    /// Creates a global Environment.
     /// </summary>
     public Environment()
     {
@@ -25,7 +25,7 @@ internal class Environment
     }
 
     /// <summary>
-    /// Creates a new enclosed Environment.
+    /// Creates an enclosed Environment.
     /// </summary>
     /// <param name="enclosing">The enclosing environment.</param>
     public Environment(Environment enclosing)

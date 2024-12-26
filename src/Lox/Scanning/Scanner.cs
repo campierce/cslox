@@ -68,7 +68,7 @@ internal class Scanner
 
     #region Constructor
     /// <summary>
-    /// Creates a new Scanner.
+    /// Creates a Scanner.
     /// </summary>
     /// <param name="sourceText">The source text to be scanned.</param>
     public Scanner(string sourceText)

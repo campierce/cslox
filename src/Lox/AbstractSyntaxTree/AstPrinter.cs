@@ -112,11 +112,19 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     public string VisitReturnStmt(Stmt.Return stmt)
     {
+        if (stmt.Value is null)
+        {
+            return Parenthesize("return");
+        }
         return Parenthesize("return", stmt.Value);
     }
 
     public string VisitVarStmt(Stmt.Var stmt)
     {
+        if (stmt.Initializer is null)
+        {
+            return Parenthesize("var", stmt.Name);
+        }
         return Parenthesize("var", stmt.Name, "=", stmt.Initializer);
     }
 

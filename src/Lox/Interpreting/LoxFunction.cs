@@ -6,16 +6,35 @@ namespace Lox;
 /// </summary>
 internal class LoxFunction : ILoxCallable
 {
+    /// <summary>
+    /// The parser representation of this function.
+    /// </summary>
     private readonly Stmt.Function _declaration;
 
+    /// <summary>
+    /// The enclosing environment, at the time this function was _declared_ (by the time it's
+    /// _called_ that environment may be long since gone, unless we hold onto it here).
+    /// </summary>
     private readonly Environment _closure;
+
+    /// <summary>
+    /// Whether this is a class constructor (affects how we do return values).
+    /// </summary>
+    private readonly bool _isInitializer;
 
     public int Arity => _declaration.Params.Count;
 
-    public LoxFunction(Stmt.Function declaration, Environment closure)
+    /// <summary>
+    /// Creates a LoxFunction.
+    /// </summary>
+    /// <param name="declaration">The parser representation of this function.</param>
+    /// <param name="closure">The enclosing environment.</param>
+    /// <param name="isInitializer">Whether this is a class constructor.</param>
+    public LoxFunction(Stmt.Function declaration, Environment closure, bool isInitializer)
     {
         _declaration = declaration;
         _closure = closure;
+        _isInitializer = isInitializer;
     }
 
     /// <summary>
@@ -28,7 +47,7 @@ internal class LoxFunction : ILoxCallable
     {
         var environment = new Environment(_closure);
         environment.Define("this", instance);
-        return new LoxFunction(_declaration, environment);
+        return new LoxFunction(_declaration, environment, _isInitializer);
     }
 
     public object Call(Interpreter interpreter, List<object> arguments)
@@ -49,7 +68,18 @@ internal class LoxFunction : ILoxCallable
         }
         catch (Return returnValue)
         {
+            if (_isInitializer)
+            {
+                // if we're here, the resolver verified this had no explicit return value
+                return _closure.GetAt(0, "this");
+            }
             return returnValue.Value;
+        }
+
+        // ctor always returns `this`
+        if (_isInitializer)
+        {
+            return _closure.GetAt(0, "this");
         }
 
         // if there was no explicit return, use nil

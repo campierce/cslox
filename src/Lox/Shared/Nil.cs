@@ -17,12 +17,7 @@ internal class Nil
     public static Nil Instance { get; } = new();
 
     /// <summary>
-    /// Returns a new <see cref="Expr.Literal"/> whose value is <see cref="Instance"/>.
-    /// </summary>
-    public static Expr.Literal Literal => new(Instance);
-
-    /// <summary>
-    /// Creates a new Nil.
+    /// Creates a Nil.
     /// </summary>
     private Nil()
     {

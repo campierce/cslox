@@ -262,7 +262,7 @@ internal class Parser
 
         if (Match(TokenType.False)) { return new Expr.Literal(false); }
         if (Match(TokenType.True)) { return new Expr.Literal(true); }
-        if (Match(TokenType.Nil)) { return Nil.Literal; }
+        if (Match(TokenType.Nil)) { return new Expr.Literal(Nil.Instance); }
 
         if (Match(TokenType.Number, TokenType.String))
         {
@@ -361,14 +361,14 @@ internal class Parser
 
         Token name = Consume(TokenType.Identifier, "Expect variable name.");
 
-        Expr initializer;
+        Expr? initializer;
         if (Match(TokenType.Equal))
         {
             initializer = Expression();
         }
         else
         {
-            initializer = Nil.Literal;
+            initializer = null;
         }
 
         Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
@@ -492,14 +492,10 @@ internal class Parser
 
         Token keyword = Previous();
 
-        Expr value;
+        Expr? value = null;
         if (!Check(TokenType.Semicolon))
         {
             value = Expression();
-        }
-        else
-        {
-            value = Nil.Literal;
         }
 
         Consume(TokenType.Semicolon, "Expect ';' after return value.");

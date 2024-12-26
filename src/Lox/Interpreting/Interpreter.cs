@@ -240,7 +240,8 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         Dictionary<string, LoxFunction> methods = [];
         foreach (Stmt.Function method in stmt.Methods)
         {
-            LoxFunction function = new(method, _environment);
+            bool isInitializer = method.Name.Lexeme == "init";
+            LoxFunction function = new(method, _environment, isInitializer);
             methods[method.Name.Lexeme] = function;
         }
 
@@ -257,7 +258,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        LoxFunction function = new(stmt, _environment);
+        LoxFunction function = new(stmt, _environment, isInitializer: false); // not a method
         _environment.Define(stmt.Name.Lexeme, function);
         return default;
     }
@@ -284,13 +285,29 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitReturnStmt(Stmt.Return stmt)
     {
-        object value = Evaluate(stmt.Value);
+        object value;
+        if (stmt.Value is null)
+        {
+            value = Nil.Instance;
+        }
+        else
+        {
+            value = Evaluate(stmt.Value);
+        }
         throw new Return(value);
     }
 
     public Void VisitVarStmt(Stmt.Var stmt)
     {
-        object value = Evaluate(stmt.Initializer);
+        object value;
+        if (stmt.Initializer is null)
+        {
+            value = Nil.Instance;
+        }
+        else
+        {
+            value = Evaluate(stmt.Initializer);
+        }
         _environment.Define(stmt.Name.Lexeme, value);
         return default;
     }

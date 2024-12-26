@@ -6,7 +6,17 @@ internal class LoxClass : ILoxCallable
 
     public string Name { get; }
 
-    public int Arity => 0;
+    public int Arity
+    {
+        get
+        {
+            if (TryGetMethod("init", out LoxFunction? initializer))
+            {
+                return initializer!.Arity;
+            }
+            return 0;
+        }
+    }
 
     public LoxClass(string name, Dictionary<string, LoxFunction> methods)
     {
@@ -22,6 +32,16 @@ internal class LoxClass : ILoxCallable
     public object Call(Interpreter interpreter, List<object> arguments)
     {
         LoxInstance instance = new(this);
+
+        // if a ctor is defined...
+        if (TryGetMethod("init", out LoxFunction? initializer))
+        {
+            // give it access to `this`
+            LoxFunction ctor = initializer!.Bind(instance);
+            // and call it
+            ctor.Call(interpreter, arguments);
+        }
+
         return instance;
     }
 

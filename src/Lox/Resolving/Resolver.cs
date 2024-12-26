@@ -41,7 +41,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     #region Constructors
     /// <summary>
-    /// Creates a new Resolver.
+    /// Creates a Resolver.
     /// </summary>
     /// <param name="interpreter">The associated interpreter.</param>
     public Resolver(Interpreter interpreter)
@@ -166,13 +166,17 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         Define(stmt.Name);
 
         // when a method is accessed at runtime, we splice in a closure that binds `this`
-        BeginScope(); // must do the same here...
+        BeginScope(); // must do the same here
         _scopes.Peek()["this"] = true;
 
         foreach (Stmt.Function method in stmt.Methods)
         {
-            FunctionType declaration = FunctionType.Method;
-            ResolveFunction(method, declaration);
+            FunctionType type = FunctionType.Method;
+            if (method.Name.Lexeme == "init")
+            {
+                type = FunctionType.Initializer;
+            }
+            ResolveFunction(method, type);
         }
 
         EndScope(); // end the `this` scope
@@ -219,14 +223,26 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
             Lox.Error(stmt.Keyword, "Can't return from top-level code.");
         }
 
-        Resolve(stmt.Value);
+        if (stmt.Value is not null) // user specified a return value
+        {
+            if (_fnContext == FunctionType.Initializer) // in a class constructor
+            {
+                Lox.Error(stmt.Keyword, "Can't return a value from an initializer.");
+            }
+
+            Resolve(stmt.Value);
+        }
+
         return default;
     }
 
     public Void VisitVarStmt(Stmt.Var stmt)
     {
         Declare(stmt.Name);
-        Resolve(stmt.Initializer);
+        if (stmt.Initializer is not null)
+        {
+            Resolve(stmt.Initializer);
+        }
         Define(stmt.Name);
         return default;
     }
@@ -265,7 +281,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     #region Scopes access
     /// <summary>
-    /// Creates a new scope.
+    /// Begins a new scope.
     /// </summary>
     private void BeginScope()
     {
@@ -273,7 +289,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     }
 
     /// <summary>
-    /// Removes the current scope.
+    /// Ends the current scope.
     /// </summary>
     private void EndScope()
     {
@@ -362,6 +378,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         None,
         Function, // outside a class
+        Initializer, // method, but a constructor
         Method // inside a class
     }
     #endregion
