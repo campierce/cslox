@@ -10,8 +10,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     private Environment _environment;
 
     /// <summary>
-    /// Maps an assignment/variable expression to the number of environments between it and the
-    /// location of the corresponding variable's value.
+    /// Maps an expression to the environment distance of the variable it references.
     /// </summary>
     private readonly Dictionary<Expr, int> _locals;
     #endregion
@@ -198,6 +197,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
 
         throw new RuntimeError(expr.Name, "Only instances have fields.");
+    }
+
+    public object VisitThisExpr(Expr.This expr)
+    {
+        return LookUpVariable(expr.Keyword, expr);
     }
 
     public object VisitUnaryExpr(Expr.Unary expr)

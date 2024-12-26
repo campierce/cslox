@@ -1,5 +1,9 @@
 namespace Lox;
 
+/// <summary>
+/// Runtime representation of a function (wraps the AST node and adds things only the interpreter
+/// cares about).
+/// </summary>
 internal class LoxFunction : ILoxCallable
 {
     private readonly Stmt.Function _declaration;
@@ -12,6 +16,19 @@ internal class LoxFunction : ILoxCallable
     {
         _declaration = declaration;
         _closure = closure;
+    }
+
+    /// <summary>
+    /// Copies this function and splices a new environment into its closure that binds `this` to the
+    /// given instance.
+    /// </summary>
+    /// <param name="instance">The instance to which `this` refers.</param>
+    /// <returns>A copy of this function whose closure binds `this`.</returns>
+    public LoxFunction Bind(LoxInstance instance)
+    {
+        var environment = new Environment(_closure);
+        environment.Define("this", instance);
+        return new LoxFunction(_declaration, environment);
     }
 
     public object Call(Interpreter interpreter, List<object> arguments)

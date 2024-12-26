@@ -56,6 +56,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
         return Parenthesize("=", expr.Object, expr.Name.Lexeme, expr.Value);
     }
 
+    public string VisitThisExpr(Expr.This expr)
+    {
+        return "this";
+    }
+
     public string VisitUnaryExpr(Expr.Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);

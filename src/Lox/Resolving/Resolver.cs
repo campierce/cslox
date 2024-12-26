@@ -27,6 +27,12 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     private readonly Stack<Dictionary<string, bool>> _scopes;
 
     /// <summary>
+    /// The class "context" that surrounds the syntax node we are currently visiting; if none, then
+    /// we know `this` is not permitted.
+    /// </summary>
+    private ClassType _clsContext;
+
+    /// <summary>
     /// The function "context" that surrounds the syntax node we are currently visiting; if none,
     /// then we know a return statement is not permitted.
     /// </summary>
@@ -110,6 +116,18 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         return default;
     }
 
+    public Void VisitThisExpr(Expr.This expr)
+    {
+        if (_clsContext == ClassType.None)
+        {
+            Lox.Error(expr.Keyword, "Can't use 'this' outside of a class.");
+            return default;
+        }
+
+        ResolveLocal(expr, expr.Keyword);
+        return default;
+    }
+
     public Void VisitUnaryExpr(Expr.Unary expr)
     {
         Resolve(expr.Right);
@@ -119,8 +137,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     public Void VisitVariableExpr(Expr.Variable expr)
     {
         if (_scopes.Count != 0 // not global
-            && _scopes.Peek().TryGetValue(expr.Name.Lexeme, out bool value) // declared
-            && !value) // but not yet defined
+            && _scopes.Peek().TryGetValue(expr.Name.Lexeme, out bool isInitialized) // declared
+            && !isInitialized) // but not yet defined
         {
             Lox.Error(expr.Name, "Can't read local variable in its own initializer.");
         }
@@ -141,8 +159,15 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitClassStmt(Stmt.Class stmt)
     {
+        ClassType enclosingClsContext = _clsContext;
+        _clsContext = ClassType.Class;
+
         Declare(stmt.Name);
         Define(stmt.Name);
+
+        // when a method is accessed at runtime, we splice in a closure that binds `this`
+        BeginScope(); // must do the same here...
+        _scopes.Peek()["this"] = true;
 
         foreach (Stmt.Function method in stmt.Methods)
         {
@@ -150,6 +175,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
             ResolveFunction(method, declaration);
         }
 
+        EndScope(); // end the `this` scope
+        _clsContext = enclosingClsContext; // restore previous context
         return default;
     }
 
@@ -214,10 +241,11 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     #region Interpreter access
     /// <summary>
-    /// Resolves a local variable within the interpreter, by finding the number of environments
-    /// between that variable's usage and its declaration (its "distance").
+    /// Resolves the "distance" of a local variable -- i.e., finds the number of environments
+    /// between that variable's usage (in the given assignment/this/variable expr) and its
+    /// declaration. Passes the distance to the interpreter for use at runtime.
     /// </summary>
-    /// <param name="expr">The assignment/variable expression in which the variable is used.</param>
+    /// <param name="expr">The expression in which the variable is used.</param>
     /// <param name="name">A token containing the name of the variable.</param>
     private void ResolveLocal(Expr expr, Token name)
     {
@@ -301,7 +329,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     }
 
     /// <summary>
-    /// Resolves a function.
+    /// Resolves a function of a given type.
     /// </summary>
     /// <param name="function">The function to be resolved.</param>
     /// <param name="type">The type of function.</param>
@@ -322,4 +350,19 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         _fnContext = enclosingFnContext;
     }
     #endregion Helpers
+
+    #region Enums
+    private enum ClassType
+    {
+        None,
+        Class
+    }
+
+    private enum FunctionType
+    {
+        None,
+        Function, // outside a class
+        Method // inside a class
+    }
+    #endregion
 }

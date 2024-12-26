@@ -21,7 +21,7 @@ internal class LoxInstance
 
         if (_class.TryGetMethod(name.Lexeme, out LoxFunction? method))
         {
-            return method!;
+            return method!.Bind(this);
         }
 
         throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.");

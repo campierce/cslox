@@ -6,9 +6,9 @@ public class AstGenerator
 {
     /// <summary>
     /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
-    /// e.g., to create an `Operator` property despite `operator` being a reserved keyword.
+    /// e.g., to define an `@operator` parameter and `Operator` property.
     /// </summary>
-    private const char escapePrefix = '@';
+    private const char verbatimPrefix = '@';
 
     public static void Main(string[] args)
     {
@@ -31,14 +31,15 @@ public class AstGenerator
             "Expr",
             [
                 "Assign   : Token name, Expr value",
-                $"Binary  : Expr left, Token {escapePrefix}operator, Expr right",
+                $"Binary  : Expr left, Token {verbatimPrefix}operator, Expr right",
                 "Call     : Expr callee, Token paren, List<Expr> arguments",
-                $"Get     : Expr {escapePrefix}object, Token name",
+                $"Get     : Expr {verbatimPrefix}object, Token name",
                 "Grouping : Expr expression",
                 "Literal  : object value",
-                $"Logical : Expr left, Token {escapePrefix}operator, Expr right",
-                $"Set     : Expr {escapePrefix}object, Token name, Expr value",
-                $"Unary   : Token {escapePrefix}operator, Expr right",
+                $"Logical : Expr left, Token {verbatimPrefix}operator, Expr right",
+                $"Set     : Expr {verbatimPrefix}object, Token name, Expr value",
+                "This     : Token keyword",
+                $"Unary   : Token {verbatimPrefix}operator, Expr right",
                 "Variable : Token name"
             ]
         );
@@ -51,7 +52,7 @@ public class AstGenerator
                 "Block      : List<Stmt> statements",
                 "Class      : Token name, List<Function> methods",
                 "Expression : Expr expr",
-                $"Function  : Token name, List<Token> {escapePrefix}params, List<Stmt> body",
+                $"Function  : Token name, List<Token> {verbatimPrefix}params, List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
                 "Print      : Expr expr",
                 "Return     : Token keyword, Expr value",
@@ -172,7 +173,7 @@ public class AstGenerator
     #region Static helpers
     private static string GetPropertyName(string source)
     {
-        if (source.StartsWith(escapePrefix))
+        if (source.StartsWith(verbatimPrefix))
         {
             source = source[1..];
         }
