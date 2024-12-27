@@ -38,6 +38,7 @@ public class AstGenerator
                 "Literal  : object value",
                 $"Logical : Expr left, Token {verbatimPrefix}operator, Expr right",
                 $"Set     : Expr {verbatimPrefix}object, Token name, Expr value",
+                "Super    : Token keyword, Token method",
                 "This     : Token keyword",
                 $"Unary   : Token {verbatimPrefix}operator, Expr right",
                 "Variable : Token name"

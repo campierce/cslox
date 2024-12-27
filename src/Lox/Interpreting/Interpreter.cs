@@ -199,6 +199,26 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         throw new RuntimeError(expr.Name, "Only instances have fields.");
     }
 
+    public object VisitSuperExpr(Expr.Super expr)
+    {
+        // if we're here then we've visited the class declaration without issue
+        // so the superclass in question must be defined, some distance away
+        int distance = _locals[expr];
+        var superclass = (LoxClass)_environment.GetAt(distance, "super");
+
+        if (superclass.TryFindMethod(expr.Method.Lexeme, out LoxFunction? method))
+        {
+            // we always splice in a closure that binds `this` when we access a method
+            // we're in a method right now, so that must have already happened
+            var instance = (LoxInstance)_environment.GetAt(distance - 1, "this");
+
+            // and we're accessing a new method, so we must apply the same rule
+            return method!.Bind(instance);
+        }
+
+        throw new RuntimeError(expr.Method, $"Undefined property '{expr.Method.Lexeme}'.");
+    }
+
     public object VisitThisExpr(Expr.This expr)
     {
         return LookUpVariable(expr.Keyword, expr);
@@ -235,28 +255,39 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitClassStmt(Stmt.Class stmt)
     {
+        // if there appears to be a superclass...
         object? superclass = null;
         if (stmt.Superclass is not null)
         {
+            // make sure it's actually a class (must have been defined earlier)
             superclass = Evaluate(stmt.Superclass);
             if (superclass is not LoxClass)
             {
                 throw new RuntimeError(stmt.Superclass.Name, "Superclass must be a class.");
             }
-        }
 
-        _environment.Define(stmt.Name.Lexeme, Nil.Instance);
+            // and then bind it to `super` (methods will form a closure over this)
+            _environment = new Environment(_environment);
+            _environment.Define("super", superclass);
+        }
 
         Dictionary<string, LoxFunction> methods = [];
         foreach (Stmt.Function method in stmt.Methods)
         {
             bool isInitializer = method.Name.Lexeme == "init";
             LoxFunction function = new(method, _environment, isInitializer);
+            // notice: no error on duplicate method names
             methods[method.Name.Lexeme] = function;
         }
 
-        LoxClass cls = new(stmt.Name.Lexeme, (LoxClass)superclass!, methods);
-        _environment.Assign(stmt.Name, cls);
+        if (superclass is not null)
+        {
+            _environment = _environment.Enclosing!; // discard `super` scope
+        }
+
+        LoxClass cls = new(stmt.Name.Lexeme, (LoxClass?)superclass, methods);
+        _environment.Define(stmt.Name.Lexeme, cls);
+
         return default;
     }
 

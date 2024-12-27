@@ -205,8 +205,7 @@ internal class Parser
 
     private Expr Unary()
     {
-        // unary → ( "!" | "-" ) unary
-        //       | call ;
+        // unary → ( "!" | "-" ) unary | call ;
 
         if (Match(TokenType.Bang, TokenType.Minus))
         {
@@ -255,24 +254,23 @@ internal class Parser
 
     private Expr Primary()
     {
-        // primary → "true" | "false" | "nil"
-        //         | NUMBER | STRING
-        //         | IDENTIFIER
-        //         | "(" expression ")" ;
+        // primary → "true" | "false" | "nil" | "this"
+        //         | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+        //         | "super" "." IDENTIFIER ;
 
         if (Match(TokenType.False)) { return new Expr.Literal(false); }
         if (Match(TokenType.True)) { return new Expr.Literal(true); }
         if (Match(TokenType.Nil)) { return new Expr.Literal(Nil.Instance); }
 
-        if (Match(TokenType.Number, TokenType.String))
-        {
-            // the scanner sets a non-null literal on these token types
-            return new Expr.Literal(Previous().Literal!);
-        }
-
         if (Match(TokenType.This))
         {
             return new Expr.This(Previous());
+        }
+
+        if (Match(TokenType.Number, TokenType.String))
+        {
+            // we are assured the scanner set a non-null literal on these token types
+            return new Expr.Literal(Previous().Literal!);
         }
 
         if (Match(TokenType.Identifier))
@@ -287,6 +285,14 @@ internal class Parser
             return new Expr.Grouping(expr);
         }
 
+        if (Match(TokenType.Super))
+        {
+            Token keyword = Previous();
+            Consume(TokenType.Dot, "Expect '.' after 'super'.");
+            Token method = Consume(TokenType.Identifier, "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+        }
+
         throw Error(Peek(), "Expect expression.");
     }
     #endregion
@@ -299,12 +305,10 @@ internal class Parser
         //             | varDecl
         //             | statement ;
 
-        #pragma warning disable format
         if (Match(TokenType.Class)) { return ClassDeclaration(); }
-        if (Match(TokenType.Fun))   { return Function("function"); }
-        if (Match(TokenType.Var))   { return VarDeclaration(); }
+        if (Match(TokenType.Fun)) { return Function("function"); }
+        if (Match(TokenType.Var)) { return VarDeclaration(); }
         return Statement();
-        #pragma warning restore format
     }
 
     private Stmt.Class ClassDeclaration()

@@ -56,6 +56,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
         return Parenthesize("=", expr.Object, expr.Name, expr.Value);
     }
 
+    public string VisitSuperExpr(Expr.Super expr)
+    {
+        return Parenthesize("super", expr.Method);
+    }
+
     public string VisitThisExpr(Expr.This expr)
     {
         return "this";

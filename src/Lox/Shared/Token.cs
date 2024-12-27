@@ -23,11 +23,6 @@ internal class Token
     public int Line { get; }
 
     /// <summary>
-    /// A display-friendly version of this token's lexeme.
-    /// </summary>
-    public string DisplayLexeme => Type == TokenType.EOF ? "end" : $"'{Lexeme}'";
-
-    /// <summary>
     /// Creates a Token.
     /// </summary>
     /// <param name="type">The token's type.</param>

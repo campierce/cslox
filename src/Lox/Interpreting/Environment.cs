@@ -11,7 +11,7 @@ internal class Environment
     /// <summary>
     /// The enclosing environment, if applicable.
     /// </summary>
-    private readonly Environment? _enclosing;
+    public Environment? Enclosing { get; }
     #endregion
 
     #region Constructors
@@ -21,7 +21,7 @@ internal class Environment
     public Environment()
     {
         _values = [];
-        _enclosing = null;
+        Enclosing = null;
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ internal class Environment
     public Environment(Environment enclosing)
     {
         _values = [];
-        _enclosing = enclosing;
+        Enclosing = enclosing;
     }
     #endregion
 
@@ -62,9 +62,9 @@ internal class Environment
         }
 
         // otherwise try the enclosing scope
-        if (_enclosing is not null)
+        if (Enclosing is not null)
         {
-            _enclosing.Assign(name, value);
+            Enclosing.Assign(name, value);
             return;
         }
 
@@ -97,9 +97,9 @@ internal class Environment
         }
 
         // otherwise try the enclosing scope
-        if (_enclosing is not null)
+        if (Enclosing is not null)
         {
-            return _enclosing.Get(name);
+            return Enclosing.Get(name);
         }
 
         throw new RuntimeError(name, $"Undefined variable '{name.Lexeme}'.");
@@ -129,7 +129,7 @@ internal class Environment
         for (int i = 0; i < distance; i++)
         {
             // safe to assume the enclosing env is non-null b/c the resolver found it earlier
-            environment = environment._enclosing!;
+            environment = environment.Enclosing!;
         }
 
         return environment;

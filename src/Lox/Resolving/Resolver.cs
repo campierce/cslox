@@ -3,7 +3,7 @@ namespace Lox;
 /// <summary>
 /// Resolves local variables in the AST (i.e., finds where a variable is declared relative to where
 /// it is used). This allows us to detect some kinds of invalid programs before runtime, and it
-/// allows the interpreter to reuse the same resolution path (which is required for static scope).
+/// allows the interpreter to reuse the same resolution path (which is required for lexical scope).
 /// </summary>
 internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 {
@@ -14,28 +14,26 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     private readonly Interpreter _interpreter;
 
     /// <summary>
-    /// Stack of lexical scopes, each of which maps a variable name to whether we have resolved its
-    /// initializer (which allows us to prevent the initializer from referencing the variable
-    /// itself). This is how we prevent name collisions within a given scope.
+    /// Stack of scopes that mirror the runtime environment chain, each of which maps a variable
+    /// name to whether we have resolved its initializer (which allows us to prevent the initializer
+    /// from referencing the variable itself). This is how we prevent name collisions within a given
+    /// scope.
     /// <para>
     /// Note the concept of an initializer only applies to variable statements, so other usages of
-    /// variables (like a function's name in its declaration) will be considered initialized right
-    /// away.
+    /// variables (like a function's name in its declaration) are considered initialized right away.
     /// </para>
     /// </summary>
     private readonly Stack<Dictionary<string, bool>> _scopes;
 
     /// <summary>
-    /// The class "context" that surrounds the syntax node we are currently visiting; if none, we
-    /// know `this` is not permitted.
+    /// The class context that surrounds the syntax node we are currently visiting.
     /// </summary>
-    private ClassType _clsContext;
+    private ClassType _currentClass;
 
     /// <summary>
-    /// The function "context" that surrounds the syntax node we are currently visiting; if none, we
-    /// know a return statement is not permitted.
+    /// The function context that surrounds the syntax node we are currently visiting.
     /// </summary>
-    private FunctionType _fnContext;
+    private FunctionType _currentFunction;
     #endregion
 
     #region Constructors
@@ -47,8 +45,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     {
         _interpreter = interpreter;
         _scopes = new();
-        _clsContext = ClassType.None;
-        _fnContext = FunctionType.None;
+        _currentClass = ClassType.None;
+        _currentFunction = FunctionType.None;
     }
     #endregion
 
@@ -116,9 +114,24 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         return default;
     }
 
+    public Void VisitSuperExpr(Expr.Super expr)
+    {
+        if (_currentClass == ClassType.None)
+        {
+            Lox.Error(expr.Keyword, "Can't use 'super' outside of a class.");
+        }
+        else if (_currentClass != ClassType.Subclass)
+        {
+            Lox.Error(expr.Keyword, "Can't use 'super' in a class with no superclass.");
+        }
+
+        ResolveLocal(expr, expr.Keyword);
+        return default;
+    }
+
     public Void VisitThisExpr(Expr.This expr)
     {
-        if (_clsContext == ClassType.None)
+        if (_currentClass == ClassType.None)
         {
             Lox.Error(expr.Keyword, "Can't use 'this' outside of a class.");
             return default;
@@ -159,8 +172,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitClassStmt(Stmt.Class stmt)
     {
-        ClassType enclosingClsContext = _clsContext;
-        _clsContext = ClassType.Class;
+        ClassType enclosingClsContext = _currentClass;
+        _currentClass = ClassType.Class;
 
         Declare(stmt.Name);
         Define(stmt.Name);
@@ -172,8 +185,14 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
                 Lox.Error(stmt.Superclass.Name, "A class can't inherit from itself.");
             }
 
+            _currentClass = ClassType.Subclass;
+
             // can declare classes in blocks, so the superclass could be a local variable
             Resolve(stmt.Superclass);
+
+            // when a class is declared at runtime, we splice in a closure that binds `super`
+            BeginScope(); // must do the same here
+            _scopes.Peek()["super"] = true;
         }
 
         // when a method is accessed at runtime, we splice in a closure that binds `this`
@@ -191,7 +210,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         }
 
         EndScope(); // end the `this` scope
-        _clsContext = enclosingClsContext; // restore previous context
+        if (stmt.Superclass is not null) { EndScope(); } // end the `super` scope
+        _currentClass = enclosingClsContext; // restore previous context
         return default;
     }
 
@@ -229,14 +249,14 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
     public Void VisitReturnStmt(Stmt.Return stmt)
     {
-        if (_fnContext == FunctionType.None)
+        if (_currentFunction == FunctionType.None)
         {
             Lox.Error(stmt.Keyword, "Can't return from top-level code.");
         }
 
         if (stmt.Value is not null) // user specified a return value
         {
-            if (_fnContext == FunctionType.Initializer) // in a class constructor
+            if (_currentFunction == FunctionType.Initializer) // in a class constructor
             {
                 Lox.Error(stmt.Keyword, "Can't return a value from an initializer.");
             }
@@ -286,7 +306,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
                 return;
             }
         }
-        // if we didn't find it, assume it's global; will be handled at runtime
+        // if we didn't find it, assume it will exist in the global scope by the time it's needed
     }
     #endregion
 
@@ -362,8 +382,8 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// <param name="type">The type of function.</param>
     private void ResolveFunction(Stmt.Function function, FunctionType type)
     {
-        FunctionType enclosingFnContext = _fnContext;
-        _fnContext = type;
+        FunctionType enclosingFnContext = _currentFunction;
+        _currentFunction = type;
 
         BeginScope();
         foreach (Token param in function.Params)
@@ -374,23 +394,24 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
         Resolve(function.Body);
         EndScope();
 
-        _fnContext = enclosingFnContext;
+        _currentFunction = enclosingFnContext;
     }
     #endregion Helpers
 
     #region Enums
     private enum ClassType
     {
-        None,
-        Class
+        None, // `this` is not permitted
+        Class,
+        Subclass // `super` is not permitted
     }
 
     private enum FunctionType
     {
-        None,
-        Function, // outside a class
-        Initializer, // method, but a constructor
-        Method // inside a class
+        None, // `return` is not permitted
+        Function,
+        Initializer, // (class constructor) `return` _with value_ is not permitted
+        Method // (class function)
     }
     #endregion
 }

@@ -6,7 +6,7 @@ internal class LoxClass : ILoxCallable
 
     public string Name { get; }
 
-    public LoxClass Superclass { get; }
+    public LoxClass? Superclass { get; }
 
     public int Arity
     {
@@ -20,7 +20,7 @@ internal class LoxClass : ILoxCallable
         }
     }
 
-    public LoxClass(string name, LoxClass superclass, Dictionary<string, LoxFunction> methods)
+    public LoxClass(string name, LoxClass? superclass, Dictionary<string, LoxFunction> methods)
     {
         Name = name;
         Superclass = superclass;
