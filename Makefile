@@ -1,6 +1,6 @@
+ARGS    :=
 AST_DIR := src/Lox/AbstractSyntaxTree
 AST_PRJ := src/AstGenerator/AstGenerator.csproj
-FLAG    :=
 LOX_PRJ := src/Lox/Lox.csproj
 SLN     := cslox.sln
 
@@ -27,7 +27,7 @@ publish:
 		--output $(PWD)
 
 run:
-	@dotnet run --project $(LOX_PRJ) -- $(FLAG)
+	@dotnet run --project $(LOX_PRJ) -- $(ARGS)
 
 tree:
 	@echo "Generating abstract syntax tree..."
