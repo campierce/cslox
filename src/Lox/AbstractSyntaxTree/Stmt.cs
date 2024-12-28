@@ -7,22 +7,67 @@ internal abstract class Stmt
 
     internal interface IVisitor<T>
     {
+        /// <summary>
+        /// Visits the given Block.
+        /// </summary>
+        /// <param name="stmt">The Block to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitBlockStmt(Block stmt);
 
+        /// <summary>
+        /// Visits the given Class.
+        /// </summary>
+        /// <param name="stmt">The Class to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitClassStmt(Class stmt);
 
+        /// <summary>
+        /// Visits the given Expression.
+        /// </summary>
+        /// <param name="stmt">The Expression to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitExpressionStmt(Expression stmt);
 
+        /// <summary>
+        /// Visits the given Function.
+        /// </summary>
+        /// <param name="stmt">The Function to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitFunctionStmt(Function stmt);
 
+        /// <summary>
+        /// Visits the given If.
+        /// </summary>
+        /// <param name="stmt">The If to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitIfStmt(If stmt);
 
+        /// <summary>
+        /// Visits the given Print.
+        /// </summary>
+        /// <param name="stmt">The Print to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitPrintStmt(Print stmt);
 
+        /// <summary>
+        /// Visits the given Return.
+        /// </summary>
+        /// <param name="stmt">The Return to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitReturnStmt(Return stmt);
 
+        /// <summary>
+        /// Visits the given Var.
+        /// </summary>
+        /// <param name="stmt">The Var to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitVarStmt(Var stmt);
 
+        /// <summary>
+        /// Visits the given While.
+        /// </summary>
+        /// <param name="stmt">The While to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitWhileStmt(While stmt);
     }
 

@@ -7,28 +7,88 @@ internal abstract class Expr
 
     internal interface IVisitor<T>
     {
+        /// <summary>
+        /// Visits the given Assign.
+        /// </summary>
+        /// <param name="expr">The Assign to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitAssignExpr(Assign expr);
 
+        /// <summary>
+        /// Visits the given Binary.
+        /// </summary>
+        /// <param name="expr">The Binary to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitBinaryExpr(Binary expr);
 
+        /// <summary>
+        /// Visits the given Call.
+        /// </summary>
+        /// <param name="expr">The Call to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitCallExpr(Call expr);
 
+        /// <summary>
+        /// Visits the given Get.
+        /// </summary>
+        /// <param name="expr">The Get to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitGetExpr(Get expr);
 
+        /// <summary>
+        /// Visits the given Grouping.
+        /// </summary>
+        /// <param name="expr">The Grouping to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitGroupingExpr(Grouping expr);
 
+        /// <summary>
+        /// Visits the given Literal.
+        /// </summary>
+        /// <param name="expr">The Literal to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitLiteralExpr(Literal expr);
 
+        /// <summary>
+        /// Visits the given Logical.
+        /// </summary>
+        /// <param name="expr">The Logical to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitLogicalExpr(Logical expr);
 
+        /// <summary>
+        /// Visits the given Set.
+        /// </summary>
+        /// <param name="expr">The Set to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitSetExpr(Set expr);
 
+        /// <summary>
+        /// Visits the given Super.
+        /// </summary>
+        /// <param name="expr">The Super to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitSuperExpr(Super expr);
 
+        /// <summary>
+        /// Visits the given This.
+        /// </summary>
+        /// <param name="expr">The This to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitThisExpr(This expr);
 
+        /// <summary>
+        /// Visits the given Unary.
+        /// </summary>
+        /// <param name="expr">The Unary to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitUnaryExpr(Unary expr);
 
+        /// <summary>
+        /// Visits the given Variable.
+        /// </summary>
+        /// <param name="expr">The Variable to visit.</param>
+        /// <returns>A value of type <typeparamref name="T"/>.</returns>
         T VisitVariableExpr(Variable expr);
     }
 

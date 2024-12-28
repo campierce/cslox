@@ -63,7 +63,7 @@ public class AstGenerator
         );
     }
 
-    #region String building helpers
+    #region String building
     private static void DefineAst(string outputDir, string baseName, List<string> types)
     {
         IndentableStringBuilder sb = new();
@@ -162,6 +162,11 @@ public class AstGenerator
             sb.AppendLine();
             string className = type.Split(':')[0].Trim();
             string paramName = baseName.ToLower(CultureInfo.InvariantCulture);
+            sb.AppendLine("/// <summary>");
+            sb.AppendLine($"/// Visits the given {className}.");
+            sb.AppendLine("/// </summary>");
+            sb.AppendLine($"/// <param name=\"{paramName}\">The {className} to visit.</param>");
+            sb.AppendLine("/// <returns>A value of type <typeparamref name=\"T\"/>.</returns>");
             sb.AppendLine($"T Visit{className}{baseName}({className} {paramName});");
         }
 
@@ -169,9 +174,7 @@ public class AstGenerator
         sb.Outdent();
         sb.AppendLine("}");
     }
-    #endregion
 
-    #region Static helpers
     private static string GetPropertyName(string source)
     {
         if (source.StartsWith(verbatimPrefix))
