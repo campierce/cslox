@@ -12,7 +12,7 @@ internal class LoxInstance
         _fields = [];
     }
 
-    public object Get(Token name)
+    public virtual object Get(Token name)
     {
         if (_fields.TryGetValue(name.Lexeme, out object? field))
         {
@@ -27,7 +27,7 @@ internal class LoxInstance
         throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.");
     }
 
-    public void Set(Token name, object value)
+    public virtual void Set(Token name, object value)
     {
         _fields[name.Lexeme] = value;
     }

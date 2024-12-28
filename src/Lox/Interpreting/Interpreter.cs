@@ -22,7 +22,8 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         _environment = _globals;
         _locals = [];
 
-        // define native functions
+        // define native classes/functions
+        _globals.Define("list", new LoxList());
         _globals.Define("clock", new Clock());
     }
     #endregion
