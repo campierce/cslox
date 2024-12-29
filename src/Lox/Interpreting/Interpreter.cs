@@ -5,8 +5,14 @@ namespace Lox;
 internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
     #region State
+    /// <summary>
+    /// The global environment.
+    /// </summary>
     private readonly Environment _globals;
 
+    /// <summary>
+    /// The current environment.
+    /// </summary>
     private Environment _environment;
 
     /// <summary>
@@ -51,7 +57,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
         finally
         {
-            _environment = previous; // discard this block's scope
+            _environment = previous; // discard block scope
         }
     }
 
@@ -98,17 +104,24 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         if (expr.Operator.Type == TokenType.BangEqual)
         {
-            return !IsEqual(left, right);
+            // We must use Equals because the operands are typed as object (it's virtual and
+            // dispatches to the runtime type). If we used == then we'd always compare references
+            // and, e.g., `1 == 1` would be false.
+            return !left.Equals(right);
         }
         if (expr.Operator.Type == TokenType.EqualEqual)
         {
-            return IsEqual(left, right);
+            // And we're fine using .NET's default equality semantics:
+            // - value comparison for booleans/numbers/strings
+            // - referential comparison otherwise
+            return left.Equals(right);
         }
 
-        CheckNumberOperands(expr.Operator, left, right);
-
-        double a = (double)left;
-        double b = (double)right;
+        if (left is not double a || right is not double b)
+        {
+            throw new RuntimeError(expr.Operator, "Operands must be numbers.");
+        }
+        
         #pragma warning disable format
         return expr.Operator.Type switch
         {
@@ -202,7 +215,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public object VisitSuperExpr(Expr.Super expr)
     {
-        // if we're here then we've visited the class declaration without issue
+        // if we're here then we've visited the subclass declaration without issue
         // so the superclass in question must be defined, some distance away
         int distance = _locals[expr];
         var superclass = (LoxClass)_environment.GetAt(distance, "super");
@@ -234,8 +247,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             case TokenType.Bang:
                 return !IsTruthy(right);
             case TokenType.Minus:
-                CheckNumberOperand(expr.Operator, right);
-                return -(double)right;
+                if (right is not double num)
+                {
+                    throw new RuntimeError(expr.Operator, "Operand must be a number.");
+                }
+                return -num;
         }
 
         throw new RuntimeError(expr.Operator, "Unrecognized operator."); // unreachable
@@ -300,7 +316,8 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public Void VisitFunctionStmt(Stmt.Function stmt)
     {
-        LoxFunction function = new(stmt, _environment, isInitializer: false); // not a method
+        // methods are handled in VisitClassStmt, so we're assured this is not a ctor
+        LoxFunction function = new(stmt, _environment, isInitializer: false);
         _environment.Define(stmt.Name.Lexeme, function);
         return default;
     }
@@ -321,7 +338,13 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     public Void VisitPrintStmt(Stmt.Print stmt)
     {
         object value = Evaluate(stmt.Expr);
-        Console.WriteLine(Stringify(value));
+        string? str = value.ToString();
+        if (value is bool)
+        {
+            // .NET wants to capitalize this, but Lox does not
+            str = str?.ToLower(CultureInfo.InvariantCulture);
+        }
+        Console.WriteLine(str);
         return default;
     }
 
@@ -364,7 +387,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     }
     #endregion
 
-    #region Instance helpers
+    #region Helpers
     private object Evaluate(Expr expr)
     {
         return expr.Accept(this);
@@ -386,9 +409,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             return _globals.Get(name);
         }
     }
-    #endregion
 
-    #region Static helpers
     private static bool IsTruthy(object obj)
     {
         // nil and false are falsey, everything else is truthy (like Ruby)
@@ -400,41 +421,6 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             _      => true
         };
         #pragma warning disable format
-    }
-
-    private static bool IsEqual(object a, object b)
-    {
-        // we're fine with C#'s notion of equality
-        return a.Equals(b);
-    }
-
-    private static void CheckNumberOperand(Token op, object operand)
-    {
-        if (operand is double)
-        {
-            return;
-        }
-        throw new RuntimeError(op, "Operand must be a number.");
-    }
-
-    private static void CheckNumberOperands(Token op, object left, object right)
-    {
-        if (left is double && right is double)
-        {
-            return;
-        }
-        throw new RuntimeError(op, "Operands must be numbers.");
-    }
-
-    private static string? Stringify(object obj)
-    {
-        if (obj is bool b)
-        {
-            // C# wants to capitalize this, but Lox does not
-            return b.ToString().ToLower(CultureInfo.InvariantCulture);
-        }
-
-        return obj.ToString();
     }
     #endregion
 }
