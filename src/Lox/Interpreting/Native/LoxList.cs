@@ -106,6 +106,8 @@ internal class LoxList : ILoxCallable
             {
                 return _implementation(arguments);
             }
+
+            public override string ToString() => "<native fn>";
         }
     }
 }
