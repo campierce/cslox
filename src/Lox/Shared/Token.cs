@@ -3,7 +3,7 @@ namespace Lox;
 internal class Token
 {
     /// <summary>
-    /// The token's type.
+    /// The type of this token.
     /// </summary>
     public TokenType Type { get; }
 
@@ -13,7 +13,7 @@ internal class Token
     public string Lexeme { get; }
 
     /// <summary>
-    /// The literal value (string or number) represented by the lexeme, if applicable.
+    /// The runtime value represented by the lexeme; only non-null for numbers and strings.
     /// </summary>
     public object? Literal { get; }
 
@@ -25,10 +25,10 @@ internal class Token
     /// <summary>
     /// Creates a Token.
     /// </summary>
-    /// <param name="type">The token's type.</param>
-    /// <param name="lexeme">The token's lexeme.</param>
-    /// <param name="literal">The token's literal.</param>
-    /// <param name="line">The token's line.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="lexeme">The lexeme.</param>
+    /// <param name="literal">The runtime value.</param>
+    /// <param name="line">The line.</param>
     public Token(TokenType type, string lexeme, object? literal, int line)
     {
         Type = type;

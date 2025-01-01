@@ -3,26 +3,38 @@ namespace Lox;
 internal class Parser
 {
     #region State
+    /// <summary>
+    /// The index of the current token.
+    /// </summary>
+    private int _current = 0;
+
+    /// <summary>
+    /// The tokens to parse.
+    /// </summary>
     private readonly List<Token> _tokens;
 
-    private int _current;
-
-    private bool IsAtEnd => Peek().Type == TokenType.EOF;
-
-    private delegate Expr BinaryLikeExprOperand();
-
-    private delegate TItem ItemConsumer<TItem>();
+    /// <summary>
+    /// Whether we've reached the end of the tokens.
+    /// </summary>
+    private bool IsAtEnd => Peek().Type == TokenType.Eof;
     #endregion
 
     #region Constructor
+    /// <summary>
+    /// Creates a Parser.
+    /// </summary>
+    /// <param name="tokens">The tokens to parse.</param>
     public Parser(List<Token> tokens)
     {
         _tokens = tokens;
-        _current = 0;
     }
     #endregion
 
     #region API
+    /// <summary>
+    /// Parses the list of tokens into an abstract syntax tree (AST).
+    /// </summary>
+    /// <returns>The AST as a list of Stmt nodes.</returns>
     public List<Stmt> Parse()
     {
         // program → declaration* EOF ;
@@ -34,11 +46,9 @@ internal class Parser
             {
                 statements.Add(Declaration());
             }
-            catch (ParseError)
+            catch (ParseError) // this means we won't try to interpret the AST later on
             {
-                // parse error means we won't try to interpret the statements
-                // but we should recover and keep parsing, to see what else we find
-                Synchronize();
+                Synchronize(); // but we should recover and keep parsing, to see what else we find
             }
         }
         return statements;
@@ -46,11 +56,28 @@ internal class Parser
     #endregion
 
     #region Token list access
+    /// <summary>
+    /// Gets the current token.
+    /// </summary>
+    /// <returns>The current token.</returns>
+    private Token Peek()
+    {
+        return _tokens[_current];
+    }
+
+    /// <summary>
+    /// Gets the previous token.
+    /// </summary>
+    /// <returns>The previous token.</returns>
     private Token Previous()
     {
         return _tokens[_current - 1];
     }
 
+    /// <summary>
+    /// Advances to the next token.
+    /// </summary>
+    /// <returns>The previous token, after advancing.</returns>
     private Token Advance()
     {
         if (!IsAtEnd)
@@ -60,11 +87,11 @@ internal class Parser
         return Previous();
     }
 
-    private Token Peek()
-    {
-        return _tokens[_current];
-    }
-
+    /// <summary>
+    /// Checks whether the current token has the given type.
+    /// </summary>
+    /// <param name="type">The token type.</param>
+    /// <returns>Whether the current token has the given type.</returns>
     private bool Check(TokenType type)
     {
         if (IsAtEnd)
@@ -74,6 +101,11 @@ internal class Parser
         return Peek().Type == type;
     }
 
+    /// <summary>
+    /// Tries to match the current token against a set of allowed types. If matched, advances.
+    /// </summary>
+    /// <param name="types">The token types on which to match.</param>
+    /// <returns>Whether the current token matched one of the given types.</returns>
     private bool Match(params TokenType[] types)
     {
         foreach (TokenType type in types)
@@ -87,6 +119,12 @@ internal class Parser
         return false;
     }
 
+    /// <summary>
+    /// Tries to consume the current token; if it does not match the given type, throws an error.
+    /// </summary>
+    /// <param name="type">The expected token type.</param>
+    /// <param name="message">The error message if the type does not match.</param>
+    /// <returns>The matched token.</returns>
     private Token Consume(TokenType type, string message)
     {
         if (Check(type))
@@ -96,6 +134,9 @@ internal class Parser
         throw Error(Peek(), message);
     }
 
+    /// <summary>
+    /// Discards tokens until reaching the beginning of the next statement.
+    /// </summary>
     private void Synchronize()
     {
         Advance();
@@ -126,6 +167,10 @@ internal class Parser
     #endregion
 
     #region Expressions
+    /// <summary>
+    /// Parses the expression rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Expression()
     {
         // expression → assignment ;
@@ -133,6 +178,10 @@ internal class Parser
         return Assignment();
     }
 
+    /// <summary>
+    /// Parses the assignment rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Assignment()
     {
         // assignment → ( call "." )? IDENTIFIER "=" assignment | logicOr ;
@@ -159,6 +208,10 @@ internal class Parser
         return expr;
     }
 
+    /// <summary>
+    /// Parses the logicOr rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Or()
     {
         // logicOr → logicAnd ( "or" logicAnd )* ;
@@ -166,6 +219,10 @@ internal class Parser
         return BinaryLikeExpr<Expr.Logical>(And, TokenType.Or);
     }
 
+    /// <summary>
+    /// Parses the logicAnd rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr And()
     {
         // logicAnd → equality ( "and" equality )* ;
@@ -173,6 +230,10 @@ internal class Parser
         return BinaryLikeExpr<Expr.Logical>(Equality, TokenType.And);
     }
 
+    /// <summary>
+    /// Parses the equality rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Equality()
     {
         // equality → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -180,6 +241,10 @@ internal class Parser
         return BinaryLikeExpr<Expr.Binary>(Comparison, TokenType.BangEqual, TokenType.EqualEqual);
     }
 
+    /// <summary>
+    /// Parses the comparison rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Comparison()
     {
         // comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -189,6 +254,10 @@ internal class Parser
         );
     }
 
+    /// <summary>
+    /// Parses the term rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Term()
     {
         // term → factor ( ( "-" | "+" ) factor )* ;
@@ -196,6 +265,10 @@ internal class Parser
         return BinaryLikeExpr<Expr.Binary>(Factor, TokenType.Minus, TokenType.Plus);
     }
 
+    /// <summary>
+    /// Parses the factor rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Factor()
     {
         // factor → unary ( ( "/" | "*" ) unary )* ;
@@ -203,6 +276,10 @@ internal class Parser
         return BinaryLikeExpr<Expr.Binary>(Unary, TokenType.Slash, TokenType.Star);
     }
 
+    /// <summary>
+    /// Parses the unary rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Unary()
     {
         // unary → ( "!" | "-" ) unary | call ;
@@ -217,6 +294,10 @@ internal class Parser
         return Call();
     }
 
+    /// <summary>
+    /// Parses the call rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Call()
     {
         // call → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
@@ -245,6 +326,10 @@ internal class Parser
         return expr;
     }
 
+    /// <summary>
+    /// Parses the arguments rule.
+    /// </summary>
+    /// <returns>An Expr list that adheres to the rule.</returns>
     private List<Expr> Arguments()
     {
         // arguments → expression ( "," expression )* ;
@@ -252,14 +337,18 @@ internal class Parser
         return ItemList("arguments", Expression);
     }
 
+    /// <summary>
+    /// Parses the primary rule.
+    /// </summary>
+    /// <returns>An Expr that adheres to the rule.</returns>
     private Expr Primary()
     {
         // primary → "true" | "false" | "nil" | "this"
         //         | NUMBER | STRING | IDENTIFIER | "(" expression ")"
         //         | "super" "." IDENTIFIER ;
 
-        if (Match(TokenType.False)) { return new Expr.Literal(false); }
         if (Match(TokenType.True)) { return new Expr.Literal(true); }
+        if (Match(TokenType.False)) { return new Expr.Literal(false); }
         if (Match(TokenType.Nil)) { return new Expr.Literal(Nil.Instance); }
 
         if (Match(TokenType.This))
@@ -269,7 +358,7 @@ internal class Parser
 
         if (Match(TokenType.Number, TokenType.String))
         {
-            // we are assured the scanner set a non-null literal on these token types
+            // we're assured the scanner set a non-null literal on these token types
             return new Expr.Literal(Previous().Literal!);
         }
 
@@ -298,6 +387,10 @@ internal class Parser
     #endregion
 
     #region Statements
+    /// <summary>
+    /// Parses the declaration rule.
+    /// </summary>
+    /// <returns>A Stmt that adheres to the rule.</returns>
     private Stmt Declaration()
     {
         // declaration → classDecl
@@ -306,11 +399,15 @@ internal class Parser
         //             | statement ;
 
         if (Match(TokenType.Class)) { return ClassDeclaration(); }
-        if (Match(TokenType.Fun)) { return Function("function"); }
+        if (Match(TokenType.Fun)) { return Function("function"); } // funDecl → "fun" function ;
         if (Match(TokenType.Var)) { return VarDeclaration(); }
         return Statement();
     }
 
+    /// <summary>
+    /// Parses the classDecl rule (after the "class" token).
+    /// </summary>
+    /// <returns>A Stmt.Class.</returns>
     private Stmt.Class ClassDeclaration()
     {
         // classDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
@@ -325,26 +422,28 @@ internal class Parser
         }
 
         Consume(TokenType.LeftBrace, "Expect '{' before class body.");
-
         List<Stmt.Function> methods = [];
         while (!Check(TokenType.RightBrace) && !IsAtEnd)
         {
             methods.Add(Function("method"));
         }
-
         Consume(TokenType.RightBrace, "Expect '}' after class body.");
 
         return new Stmt.Class(name, superclass, methods);
     }
 
+    /// <summary>
+    /// Parses the function rule.
+    /// </summary>
+    /// <param name="kind">The kind of function.</param>
+    /// <returns>A Stmt.Function.</returns>
     private Stmt.Function Function(string kind)
     {
-        // funDecl → "fun" function ;
         // function → IDENTIFIER "(" parameters? ")" block ;
 
         Token name = Consume(TokenType.Identifier, $"Expect {kind} name.");
-        Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
 
+        Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
         List<Token> parameters = [];
         if (!Check(TokenType.RightParen))
         {
@@ -358,6 +457,10 @@ internal class Parser
         return new Stmt.Function(name, parameters, body);
     }
 
+    /// <summary>
+    /// Parses the parameters rule.
+    /// </summary>
+    /// <returns>A list of tokens.</returns>
     private List<Token> Parameters()
     {
         // parameters → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -367,6 +470,10 @@ internal class Parser
         );
     }
 
+    /// <summary>
+    /// Parses the varDecl rule (after the "var" token).
+    /// </summary>
+    /// <returns>A Stmt.Var.</returns>
     private Stmt.Var VarDeclaration()
     {
         // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -382,11 +489,15 @@ internal class Parser
         {
             initializer = null;
         }
-
         Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
+
         return new Stmt.Var(name, initializer);
     }
 
+    /// <summary>
+    /// Parses the statement rule.
+    /// </summary>
+    /// <returns>A Stmt that adheres to the rule.</returns>
     private Stmt Statement()
     {
         // statement → forStmt
@@ -408,11 +519,15 @@ internal class Parser
         #pragma warning restore format
     }
 
+    /// <summary>
+    /// Parses a forStmt rule (after the "for" token).
+    /// </summary>
+    /// <returns>A Stmt that adheres to the rule.</returns>
     private Stmt ForStatement()
     {
         // forStmt → "for"
-        //           "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")"
-        //           statement ;
+        //         "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")"
+        //         statement ;
 
         Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
 
@@ -446,7 +561,7 @@ internal class Parser
 
         Stmt body = Statement();
 
-        // translate/desugar to a while loop...
+        // desugar to a while loop...
 
         // evaluate the increment after the body
         if (increment is not null)
@@ -460,7 +575,7 @@ internal class Parser
         // create the loop
         body = new Stmt.While(condition, body);
 
-        // run the initializer once, before the loop
+        // execute the initializer once, before the loop
         if (initializer is not null)
         {
             body = new Stmt.Block([initializer, body]);
@@ -469,16 +584,20 @@ internal class Parser
         return body;
     }
 
+    /// <summary>
+    /// Parses the ifStmt rule (after the "if" token).
+    /// </summary>
+    /// <returns>A Stmt.If.</returns>
     private Stmt.If IfStatement()
     {
         // ifStmt → "if" "(" expression ")" statement
-        //          ( "else" statement )? ;
+        //        ( "else" statement )? ;
 
         Consume(TokenType.LeftParen, "Expect '(' after 'if'.");
         Expr condition = Expression();
         Consume(TokenType.RightParen, "Expect ')' after if condition.");
 
-        Stmt thenBranch = Statement(); // notice: not a declaration
+        Stmt thenBranch = Statement();
 
         Stmt? elseBranch = null;
         if (Match(TokenType.Else))
@@ -489,6 +608,10 @@ internal class Parser
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
+    /// <summary>
+    /// Parses the printStmt rule (after the "print" token).
+    /// </summary>
+    /// <returns>A Stmt.Print.</returns>
     private Stmt.Print PrintStatement()
     {
         // printStmt → "print" expression ";" ;
@@ -498,6 +621,10 @@ internal class Parser
         return new Stmt.Print(expr);
     }
 
+    /// <summary>
+    /// Parses the returnStmt rule (after the "return" token).
+    /// </summary>
+    /// <returns>A Stmt.Return.</returns>
     private Stmt.Return ReturnStatement()
     {
         // returnStmt → "return" expression? ";" ;
@@ -509,11 +636,15 @@ internal class Parser
         {
             value = Expression();
         }
-
         Consume(TokenType.Semicolon, "Expect ';' after return value.");
+
         return new Stmt.Return(keyword, value);
     }
 
+    /// <summary>
+    /// Parses a whileStmt rule (after the "while" token).
+    /// </summary>
+    /// <returns>A Stmt.While.</returns>
     private Stmt.While WhileStatement()
     {
         // whileStmt → "while" "(" expression ")" statement ;
@@ -521,11 +652,16 @@ internal class Parser
         Consume(TokenType.LeftParen, "Expect '(' after 'while'.");
         Expr condition = Expression();
         Consume(TokenType.RightParen, "Expect ')' after condition.");
+
         Stmt body = Statement();
 
         return new Stmt.While(condition, body);
     }
 
+    /// <summary>
+    /// Parses the block rule (after the "{" token).
+    /// </summary>
+    /// <returns>A Stmt list that adheres to the rule.</returns>
     private List<Stmt> Block()
     {
         // block → "{" declaration* "}" ;
@@ -535,11 +671,15 @@ internal class Parser
         {
             statements.Add(Declaration());
         }
-
         Consume(TokenType.RightBrace, "Expect '}' after block.");
+
         return statements;
     }
 
+    /// <summary>
+    /// Parses the exprStmt rule.
+    /// </summary>
+    /// <returns>A Stmt.Expression.</returns>
     private Stmt.Expression ExpressionStatement()
     {
         // exprStmt → expression ";" ;
@@ -551,6 +691,12 @@ internal class Parser
     #endregion
 
     #region Helpers
+    /// <summary>
+    /// Reports an error and creates an exception for the caller to throw.
+    /// </summary>
+    /// <param name="token">The token where the error occurred.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>A ParserError.</returns>
     private static ParseError Error(Token token, string message)
     {
         Lox.Error(token, message);
@@ -564,10 +710,9 @@ internal class Parser
     /// <typeparam name="TExpr">The type to parse.</typeparam>
     /// <param name="operand">A delegate that parses expressions of higher precedence than that
     /// specified by the given operators.</param>
-    /// <param name="operators">The operators that are allowed to participate in this binary-like
-    /// expression.</param>
-    /// <returns>An expression.</returns>
-    private Expr BinaryLikeExpr<TExpr>(BinaryLikeExprOperand operand, params TokenType[] operators)
+    /// <param name="operators">The operators that can participate in this expression.</param>
+    /// <returns>An Expr of type <typeparamref name="TExpr"/> or higher precedence.</returns>
+    private Expr BinaryLikeExpr<TExpr>(Func<Expr> operand, params TokenType[] operators)
     where TExpr : Expr
     {
         // binaryLikeExpr → operand ( operators[x] operand )* ;
@@ -593,10 +738,10 @@ internal class Parser
     /// <see cref="Stmt.Function.Params"/> or <see cref="Expr.Call.Arguments"/>.
     /// </summary>
     /// <typeparam name="TItem">The item type.</typeparam>
-    /// <param name="kind">The item name, plural.</param>
+    /// <param name="kind">The kind of item, plural.</param>
     /// <param name="consumer">A delegate that knows how to parse an item.</param>
-    /// <returns>A list of items.</returns>
-    private List<TItem> ItemList<TItem>(string kind, ItemConsumer<TItem> consumer)
+    /// <returns>A list of <typeparamref name="TItem"/>.</returns>
+    private List<TItem> ItemList<TItem>(string kind, Func<TItem> consumer)
     {
         // itemList → item ( "," item )* ;
 
@@ -616,5 +761,11 @@ internal class Parser
 
         return items;
     }
+
+    /// <summary>
+    /// Represents an error during parsing. Allows the parser to communicate to itself whether an
+    /// exception is recoverable or not.
+    /// </summary>
+    private class ParseError : Exception { }
     #endregion
 }

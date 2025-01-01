@@ -6,6 +6,10 @@ namespace Lox;
 internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 {
     #region API
+    /// <summary>
+    /// Prints a list of statements.
+    /// </summary>
+    /// <param name="statements">The statements to print.</param>
     public void Print(List<Stmt> statements)
     {
         foreach (Stmt statement in statements)
@@ -145,13 +149,11 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     #region Helpers
     /// <summary>
-    /// Transforms the given parts into a parenthesized string whose contents start with the given
-    /// label. If those parts are themselves AST nodes with defined handling, that will be
-    /// respected.
+    /// Builds a string representation of the inputs with parentheses around it.
     /// </summary>
-    /// <param name="label">The label.</param>
-    /// <param name="parts">The parts to transform.</param>
-    /// <returns>A string representation of the parts.</returns>
+    /// <param name="label">The label to affix in front of the parts.</param>
+    /// <param name="parts">The objects to transform to strings.</param>
+    /// <returns>A parenthesized string representation of the inputs.</returns>
     private string Parenthesize(string label, params object[] parts)
     {
         StringBuilder sb = new();
@@ -165,15 +167,15 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     }
 
     /// <summary>
-    /// Transforms the given parts into strings and appends them.
+    /// Transforms the given objects into strings and appends them.
     /// </summary>
     /// <param name="sb">The StringBuilder to which to append.</param>
-    /// <param name="parts">The parts to transform.</param>
+    /// <param name="parts">The objects to transform.</param>
     private void Transform(StringBuilder sb, params object[] parts)
     {
         foreach (object part in parts)
         {
-            // recurse on lists before appending, to avoid double-spaces
+            // recurse on lists before appending, to avoid double spaces
             if (part is IList list)
             {
                 Transform(sb, [.. list.Cast<object>()]);

@@ -12,6 +12,9 @@ internal class LoxList : ILoxCallable
 
     public override string ToString() => "<native class>";
 
+    /// <summary>
+    /// Represents a list instance.
+    /// </summary>
     private class Instance : LoxInstance
     {
         private readonly List<object> _list = [];
@@ -20,6 +23,11 @@ internal class LoxList : ILoxCallable
 
         public override object Get(Token name)
         {
+            // Notice: like other methods in Lox, these are created _per access_ (here, it's so we
+            // can close over the native list; in user methods, it's to close over `this`). That
+            // means two accessed methods will never be equal, even if they're the same method on
+            // the same list. That's not a problem per se; we make no promises to the user about
+            // method equality. Just something to be aware of.
             return name.Lexeme switch
             {
                 "add" => new Method(1, args =>
@@ -61,7 +69,7 @@ internal class LoxList : ILoxCallable
 
                 "toString" => new Method(0, _ =>
                 {
-                    return $"[{string.Join(", ", _list)}]";
+                    return $"list({string.Join(", ", _list)})";
                 }),
 
                 _ => throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.")
@@ -73,9 +81,16 @@ internal class LoxList : ILoxCallable
             throw new RuntimeError(name, "Can't set properties on a native instance.");
         }
 
+        /// <summary>
+        /// Validates that the given object is an integer that can index into this instance's list.
+        /// </summary>
+        /// <param name="index">The index to validate.</param>
+        /// <param name="token">The method name token.</param>
+        /// <returns>The index as an int.</returns>
+        /// <exception cref="RuntimeError">Thrown if the index is invalid.</exception>
         private int ValidateIndex(object index, Token token)
         {
-            if (index is not double number
+            if (index is not double number // all Lox numbers are doubles in the runtime
                 || Math.Floor(number) != number)
             {
                 throw new RuntimeError(token, "Index must be an integer.");
@@ -88,6 +103,9 @@ internal class LoxList : ILoxCallable
             return idx;
         }
 
+        /// <summary>
+        /// Represents a callable method in a list instance.
+        /// </summary>
         private class Method : ILoxCallable
         {
             public delegate object Implementation(List<object> arguments);

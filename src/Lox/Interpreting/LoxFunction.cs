@@ -18,7 +18,7 @@ internal class LoxFunction : ILoxCallable
     private readonly Environment _closure;
 
     /// <summary>
-    /// Whether this is a class constructor (affects how we do return values).
+    /// Whether this is a class constructor (affects how we handle return values).
     /// </summary>
     private readonly bool _isInitializer;
 
@@ -38,16 +38,16 @@ internal class LoxFunction : ILoxCallable
     }
 
     /// <summary>
-    /// Copies this function and splices a new environment into its closure that binds `this` to the
-    /// given instance.
+    /// Copies this function and splices a new environment into its closure that binds <c>this</c>
+    /// to the given instance.
     /// </summary>
-    /// <param name="instance">The instance to which `this` refers.</param>
-    /// <returns>A copy of this function whose closure binds `this`.</returns>
+    /// <param name="instance">The instance to which <c>this</c> refers.</param>
+    /// <returns>A copy of this function whose closure binds <c>this</c>.</returns>
     public LoxFunction Bind(LoxInstance instance)
     {
-        var environment = new Environment(_closure);
-        environment.Define("this", instance);
-        return new LoxFunction(_declaration, environment, _isInitializer);
+        var newClosure = new Environment(_closure);
+        newClosure.Define("this", instance);
+        return new LoxFunction(_declaration, newClosure, _isInitializer);
     }
 
     public object Call(Interpreter interpreter, List<object> arguments)

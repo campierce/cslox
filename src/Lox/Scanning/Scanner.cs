@@ -6,42 +6,42 @@ internal class Scanner
 {
     #region State
     /// <summary>
+    /// The index of the current character.
+    /// </summary>
+    private int _current = 0;
+
+    /// <summary>
+    /// The current line number.
+    /// </summary>
+    private int _line = 1;
+
+    /// <summary>
     /// The source text to be scanned.
     /// </summary>
     private readonly string _source;
 
     /// <summary>
-    /// The index of the current character.
-    /// </summary>
-    private int _current;
-
-    /// <summary>
-    /// The current line number.
-    /// </summary>
-    private int _line;
-
-    /// <summary>
     /// The index of the character that starts the current token.
     /// </summary>
-    private int _start;
+    private int _start = 0;
 
     /// <summary>
     /// Tokens derived from the source text.
     /// </summary>
-    private readonly List<Token> _tokens;
+    private readonly List<Token> _tokens = [];
 
     /// <summary>
-    /// Length of the current token.
+    /// The length of the current token.
     /// </summary>
     private int CurrentLength => _current - _start;
 
     /// <summary>
-    /// Whether the scanner has reached the end of the source text.
+    /// Whether we've reached the end of the source text.
     /// </summary>
     private bool IsAtEnd => _current >= _source.Length;
 
     /// <summary>
-    /// Maps keywords to their token types.
+    /// Map of keywords to their token types.
     /// </summary>
     private static readonly Dictionary<string, TokenType> s_keywordMap = new()
     {
@@ -74,16 +74,12 @@ internal class Scanner
     public Scanner(string sourceText)
     {
         _source = sourceText;
-        _current = 0;
-        _line = 1;
-        _start = 0;
-        _tokens = [];
     }
     #endregion
 
     #region API
     /// <summary>
-    /// Builds a list of tokens from the source text.
+    /// Scans the source text into tokens.
     /// </summary>
     /// <returns>A list of tokens.</returns>
     public List<Token> ScanTokens()
@@ -93,7 +89,7 @@ internal class Scanner
             _start = _current;
             ScanToken();
         }
-        _tokens.Add(new Token(TokenType.EOF, string.Empty, null, _line));
+        _tokens.Add(new Token(TokenType.Eof, string.Empty, null, _line));
         return _tokens;
     }
     #endregion
@@ -153,8 +149,9 @@ internal class Scanner
 
     #region Token list access
     /// <summary>
-    /// Adds a non-literal token to the list.
+    /// Adds a token to the list. (Call this overload for non-literals.)
     /// </summary>
+    /// <param name="type">The token type.</param>
     private void AddToken(TokenType type)
     {
         AddToken(type, null);
@@ -163,6 +160,8 @@ internal class Scanner
     /// <summary>
     /// Adds a token to the list.
     /// </summary>
+    /// <param name="type">The token type.</param>
+    /// <param name="literal">The runtime value represented by the lexeme.</param>
     private void AddToken(TokenType type, object? literal)
     {
         string text = _source.Substring(_start, CurrentLength);
@@ -172,7 +171,7 @@ internal class Scanner
 
     #region Token creation
     /// <summary>
-    /// Creates the next token. (Where the magic happens.)
+    /// Creates the next token.
     /// </summary>
     private void ScanToken()
     {
@@ -275,7 +274,7 @@ internal class Scanner
             return;
         }
 
-        // else it's an actual slash
+        // otherwise it's an actual slash
         AddToken(TokenType.Slash);
     }
 
@@ -295,19 +294,16 @@ internal class Scanner
             Advance();
         }
 
-        // if we ran out of road, that's a problem
+        // make sure it terminates
         if (IsAtEnd)
         {
             Lox.Error(_line, "Unterminated string.");
             return;
         }
-
-        // consume the closing "
         Advance();
 
-        // trim surrounding quotes
-        string value = _source.Substring(_start + 1, CurrentLength - 2);
         // tokenize
+        string value = _source.Substring(_start + 1, CurrentLength - 2);
         AddToken(TokenType.String, value);
     }
 
@@ -325,7 +321,6 @@ internal class Scanner
         // look for a fractional part
         if (Peek() == '.' && IsDigit(PeekNext()))
         {
-            // consume the .
             Advance();
             // walk the rest
             while (IsDigit(Peek()))
@@ -334,10 +329,9 @@ internal class Scanner
             }
         }
 
-        // parse the number
+        // tokenize
         string str = _source.Substring(_start, CurrentLength);
         double value = double.Parse(str, CultureInfo.InvariantCulture);
-        // tokenize
         AddToken(TokenType.Number, value);
     }
 
@@ -371,19 +365,19 @@ internal class Scanner
     /// <summary>
     /// Decides whether a character is a digit. Supported: [0-9].
     /// </summary>
-    /// <param name="c">The character to check</param>
-    /// <returns>Whether the given character is a digit.</returns>
+    /// <param name="c">The character to check.</param>
+    /// <returns>Whether the character is a digit.</returns>
     private static bool IsDigit(char c)
     {
-        // char.IsDigit gets fancy with Unicode, so we roll our own
+        // char.IsDigit() gets fancy with Unicode, so we roll our own
         return c is >= '0' and <= '9';
     }
 
     /// <summary>
-    /// Decides whether a character is alphabetical. Supported: [a-z,A-Z,_].
+    /// Decides whether a character is alphabetical. Supported: [a-zA-Z_].
     /// </summary>
     /// <param name="c">The character to check.</param>
-    /// <returns>Whether the given character is alphabetical.</returns>
+    /// <returns>Whether the character is alphabetical.</returns>
     private static bool IsAlpha(char c)
     {
         return char.IsAsciiLetter(c) || c == '_';
@@ -393,7 +387,7 @@ internal class Scanner
     /// Decides whether a character is alphanumeric.
     /// </summary>
     /// <param name="c">The character to check.</param>
-    /// <returns>Whether the given character is alphanumeric.</returns>
+    /// <returns>Whether the character is alphanumeric.</returns>
     private static bool IsAlphaNumeric(char c)
     {
         return IsAlpha(c) || IsDigit(c);

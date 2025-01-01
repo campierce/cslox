@@ -6,7 +6,7 @@ public class AstGenerator
 {
     /// <summary>
     /// If a parameter has this prefix, we remove it from the derived property name. Allows you,
-    /// e.g., to define an `@operator` parameter that becomes an `Operator` property.
+    /// e.g., to define an @operator parameter that becomes an Operator property.
     /// </summary>
     private const char verbatimPrefix = '@';
 

@@ -7,17 +7,37 @@ namespace Lox;
 public class Lox
 {
     #region State
-    private static readonly Interpreter _interpreter = new();
+    /// <summary>
+    /// Whether an error was reported (this is reset between REPL prompts).
+    /// </summary>
+    private static bool s_hadError = false;
 
-    private static readonly AstPrinter _printer = new();
+    /// <summary>
+    /// Whether a runtime error was reported.
+    /// </summary>
+    private static bool s_hadRuntimeError = false;
 
-    private static bool _hadError = false;
+    /// <summary>
+    /// The interpreter.
+    /// </summary>
+    private static readonly Interpreter s_interpreter = new();
 
-    private static bool _hadRuntimeError = false;
+    /// <summary>
+    /// Whether the user wants to print the AST instead of executing it.
+    /// </summary>
+    private static bool s_isPrintMode;
 
-    private static bool _isPrintMode;
+    /// <summary>
+    /// The AST printer.
+    /// </summary>
+    private static readonly AstPrinter s_printer = new();
     #endregion
 
+    /// <summary>
+    /// Program entry point.
+    /// </summary>
+    /// <param name="args">Program arguments.</param>
+    /// <returns>A task that completes when the program exits.</returns>
     public static async Task Main(string[] args)
     {
         RootCommand rootCommand = new("Interpreter for the Lox programming language.");
@@ -39,23 +59,23 @@ public class Lox
         rootCommand.AddArgument(scriptArgument);
         rootCommand.AddOption(isPrintModeOption);
 
-        rootCommand.SetHandler((script, isPrintMode) =>
+        rootCommand.SetHandler(async (script, isPrintMode) =>
             {
                 try
                 {
-                    _isPrintMode = isPrintMode;
+                    s_isPrintMode = isPrintMode;
                     if (script is null)
                     {
                         RunPrompt();
                     }
                     else
                     {
-                        RunFile(script.FullName);
+                        await RunFile(script.FullName);
                     }
                 }
                 catch (Exception e)
                 {
-                    _hadRuntimeError = true;
+                    s_hadRuntimeError = true;
                     Console.Error.WriteLine($"Unhandled error:{System.Environment.NewLine}{e}");
                 }
             },
@@ -66,15 +86,25 @@ public class Lox
         await rootCommand.InvokeAsync(args);
     }
 
-    #region API
-    public static void Error(int line, string message)
+    #region Internal API
+    /// <summary>
+    /// Reports an error. (Call this overload when you don't have a token.)
+    /// </summary>
+    /// <param name="line">The error line.</param>
+    /// <param name="message">The error message.</param>
+    internal static void Error(int line, string message)
     {
         Report(line, "", message);
     }
 
+    /// <summary>
+    /// Reports an error.
+    /// </summary>
+    /// <param name="token">The token where the error occurred.</param>
+    /// <param name="message">The error message.</param>
     internal static void Error(Token token, string message)
     {
-        if (token.Type == TokenType.EOF)
+        if (token.Type == TokenType.Eof)
         {
             Report(token.Line, " at end", message);
         }
@@ -84,22 +114,38 @@ public class Lox
         }
     }
 
+    /// <summary>
+    /// Reports a runtime error.
+    /// </summary>
+    /// <param name="error">The error.</param>
     internal static void RuntimeError(RuntimeError error)
     {
         Console.Error.WriteLine(
             $"{error.Message}{System.Environment.NewLine}[line {error.Token.Line}]"
         );
-        _hadRuntimeError = true;
+        s_hadRuntimeError = true;
     }
     #endregion
 
     #region Helpers
+    /// <summary>
+    /// Formats an error message and writes it to stderr.
+    /// </summary>
+    /// <param name="line">The error line.</param>
+    /// <param name="where">The error location.</param>
+    /// <param name="message">The error message.</param>
     private static void Report(int line, string where, string message)
     {
         Console.Error.WriteLine($"[line {line}] Error{where}: {message}");
-        _hadError = true;
+        s_hadError = true;
     }
 
+    /// <summary>
+    /// Parses the script argument.
+    /// </summary>
+    /// <param name="result">The argument to parse.</param>
+    /// <returns>A FileInfo for the script; null if argument was omitted, logs error if script does
+    /// not exist.</returns>
     private static FileInfo? GetFileFromArgument(ArgumentResult result)
     {
         if (result.Tokens.Count == 0)
@@ -118,6 +164,9 @@ public class Lox
         return new FileInfo(path);
     }
 
+    /// <summary>
+    /// Runs the REPL prompt.
+    /// </summary>
     private static void RunPrompt()
     {
         TextReader reader = Console.In;
@@ -131,19 +180,28 @@ public class Lox
                 break;
             }
             Run(line);
-            _hadError = false;
+            s_hadError = false;
         }
     }
 
-    private static void RunFile(string path)
+    /// <summary>
+    /// Runs a file.
+    /// </summary>
+    /// <param name="path">The file path.</param>
+    /// <returns>A task that completes when the method exits.</returns>
+    private static async Task RunFile(string path)
     {
-        string source = File.ReadAllText(path, Encoding.UTF8);
+        string source = await File.ReadAllTextAsync(path, Encoding.UTF8);
         Run(source);
 
-        if (_hadError) { System.Environment.Exit(64); } // EX_USAGE
-        if (_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
+        if (s_hadError) { System.Environment.Exit(64); } // EX_USAGE
+        if (s_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
     }
 
+    /// <summary>
+    /// Runs a string of Lox source code.
+    /// </summary>
+    /// <param name="source">The source code to run.</param>
     private static void Run(string source)
     {
         Scanner scanner = new(source);
@@ -152,20 +210,20 @@ public class Lox
         Parser parser = new(tokens);
         List<Stmt> statements = parser.Parse();
 
-        if (_hadError) { return; }
+        if (s_hadError) { return; }
 
-        Resolver resolver = new(_interpreter);
+        Resolver resolver = new(s_interpreter);
         resolver.Resolve(statements);
 
-        if (_hadError) { return; }
+        if (s_hadError) { return; }
 
-        if (_isPrintMode)
+        if (s_isPrintMode)
         {
-            _printer.Print(statements);
+            s_printer.Print(statements);
             return;
         }
 
-        _interpreter.Interpret(statements);
+        s_interpreter.Interpret(statements);
     }
     #endregion
 }

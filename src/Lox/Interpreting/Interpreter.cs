@@ -6,9 +6,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
     #region State
     /// <summary>
-    /// The global environment.
+    /// Maps an expression to the environment distance of the variable it references.
     /// </summary>
-    private readonly Environment _globals;
+    private readonly Dictionary<Expr, int> _distanceOf = [];
 
     /// <summary>
     /// The current environment.
@@ -16,17 +16,18 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     private Environment _environment;
 
     /// <summary>
-    /// Maps an expression to the environment distance of the variable it references.
+    /// The global environment.
     /// </summary>
-    private readonly Dictionary<Expr, int> _locals;
+    private readonly Environment _globals = new();
     #endregion
 
     #region Constructor
+    /// <summary>
+    /// Creates an Interpreter.
+    /// </summary>
     public Interpreter()
     {
-        _globals = new();
         _environment = _globals;
-        _locals = [];
 
         // define native classes/functions
         _globals.Define("list", new LoxList());
@@ -35,6 +36,10 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #endregion
 
     #region API
+    /// <summary>
+    /// Interprets a list of statements.
+    /// </summary>
+    /// <param name="statements">The statements to interpret.</param>
     public void Interpret(List<Stmt> statements)
     {
         try
@@ -47,6 +52,11 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
     }
 
+    /// <summary>
+    /// Executes a list of statements in the given environment.
+    /// </summary>
+    /// <param name="statements">The statements to execute.</param>
+    /// <param name="environment">The surrounding environment.</param>
     public void ExecuteBlock(List<Stmt> statements, Environment environment)
     {
         Environment previous = _environment;
@@ -61,9 +71,14 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
     }
 
+    /// <summary>
+    /// Stores the environment distance for a variable contained in the given expression.
+    /// </summary>
+    /// <param name="expr">The expression in which the variable is used.</param>
+    /// <param name="distance">The environment distance of the variable.</param>
     public void Resolve(Expr expr, int distance)
     {
-        _locals[expr] = distance;
+        _distanceOf[expr] = distance;
     }
     #endregion
 
@@ -72,7 +87,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         object value = Evaluate(expr.Value);
 
-        if (_locals.TryGetValue(expr, out int distance))
+        if (_distanceOf.TryGetValue(expr, out int distance))
         {
             _environment.AssignAt(distance, expr.Name, value);
         }
@@ -104,9 +119,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         if (expr.Operator.Type == TokenType.BangEqual)
         {
-            // We must use Equals because the operands are typed as object (it's virtual and
-            // dispatches to the runtime type). If we used == then we'd always compare references
-            // and, e.g., `1 == 1` would be false.
+            // We must use Equals because the operands are typed as object (it dispatches to the
+            // runtime type). If we used == then we'd always compare references and, e.g., `1 == 1`
+            // would be false.
             return !left.Equals(right);
         }
         if (expr.Operator.Type == TokenType.EqualEqual)
@@ -158,6 +173,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
             }
             return function.Call(this, arguments);
         }
+
         throw new RuntimeError(expr.Paren, "Can only call functions and classes.");
     }
 
@@ -217,7 +233,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         // if we're here then we've visited the subclass declaration without issue
         // so the superclass in question must be defined, some distance away
-        int distance = _locals[expr];
+        int distance = _distanceOf[expr];
         var superclass = (LoxClass)_environment.GetAt(distance, "super");
 
         if (superclass.TryFindMethod(expr.Method.Lexeme, out LoxFunction? method))
@@ -304,7 +320,6 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
         LoxClass cls = new(stmt.Name.Lexeme, (LoxClass?)superclass, methods);
         _environment.Define(stmt.Name.Lexeme, cls);
-
         return default;
     }
 
@@ -388,19 +403,35 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     #endregion
 
     #region Helpers
+    /// <summary>
+    /// Evaluates an expression.
+    /// </summary>
+    /// <param name="expr">The expression to evaluate.</param>
+    /// <returns>The result of evaluating the expression.</returns>
     private object Evaluate(Expr expr)
     {
         return expr.Accept(this);
     }
 
+    /// <summary>
+    /// Executes a statement.
+    /// </summary>
+    /// <param name="stmt">The statement to execute.</param>
     private void Execute(Stmt stmt)
     {
         stmt.Accept(this);
     }
 
+    /// <summary>
+    /// Looks up a variable by name. Tries to use the environment distance that was resolved
+    /// earlier, otherwise searches the global environment.
+    /// </summary>
+    /// <param name="name">A token whose lexeme is the variable name.</param>
+    /// <param name="expr">The expression in which the variable is used.</param>
+    /// <returns>The variable's value.</returns>
     private object LookUpVariable(Token name, Expr expr)
     {
-        if (_locals.TryGetValue(expr, out int distance))
+        if (_distanceOf.TryGetValue(expr, out int distance))
         {
             return _environment.GetAt(distance, name.Lexeme);
         }
@@ -410,9 +441,14 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
         }
     }
 
+    /// <summary>
+    /// Decides whether a given object is truthy. In Lox, <c>nil</c> and <c>false</c> are falsy,
+    /// while everything else is truthy (like Ruby).
+    /// </summary>
+    /// <param name="obj">The object to test for truthiness.</param>
+    /// <returns>Whether the object is truthy.</returns>
     private static bool IsTruthy(object obj)
     {
-        // nil and false are falsey, everything else is truthy (like Ruby)
         #pragma warning disable format
         return obj switch
         {
