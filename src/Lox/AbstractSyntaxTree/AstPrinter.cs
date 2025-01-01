@@ -145,13 +145,12 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
 
     #region Helpers
     /// <summary>
-    /// Transforms the given parts into a parenthesized string whose contents start with the given
-    /// label. If those parts are themselves AST nodes with defined handling, that will be
-    /// respected.
+    /// Transforms objects to strings, affixes a label to the front, and wraps in parentheses. If
+    /// the objects are themselves AST nodes with defined handling, that will be respected.
     /// </summary>
     /// <param name="label">The label.</param>
-    /// <param name="parts">The parts to transform.</param>
-    /// <returns>A string representation of the parts.</returns>
+    /// <param name="parts">The objects to transform.</param>
+    /// <returns>A string representation of the inputs.</returns>
     private string Parenthesize(string label, params object[] parts)
     {
         StringBuilder sb = new();
@@ -173,7 +172,7 @@ internal class AstPrinter : Expr.IVisitor<string>, Stmt.IVisitor<string>
     {
         foreach (object part in parts)
         {
-            // recurse on lists before appending, to avoid double-spaces
+            // recurse on lists before appending, to avoid double spaces
             if (part is IList list)
             {
                 Transform(sb, [.. list.Cast<object>()]);

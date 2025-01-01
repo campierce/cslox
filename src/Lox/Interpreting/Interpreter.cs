@@ -6,9 +6,9 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 {
     #region State
     /// <summary>
-    /// The global environment.
+    /// Maps an expression to the environment distance of the variable it references.
     /// </summary>
-    private readonly Environment _globals;
+    private readonly Dictionary<Expr, int> _distanceOf = [];
 
     /// <summary>
     /// The current environment.
@@ -16,17 +16,15 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     private Environment _environment;
 
     /// <summary>
-    /// Maps an expression to the environment distance of the variable it references.
+    /// The global environment.
     /// </summary>
-    private readonly Dictionary<Expr, int> _locals;
+    private readonly Environment _globals = new();
     #endregion
 
     #region Constructor
     public Interpreter()
     {
-        _globals = new();
         _environment = _globals;
-        _locals = [];
 
         // define native classes/functions
         _globals.Define("list", new LoxList());
@@ -63,7 +61,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     public void Resolve(Expr expr, int distance)
     {
-        _locals[expr] = distance;
+        _distanceOf[expr] = distance;
     }
     #endregion
 
@@ -72,7 +70,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         object value = Evaluate(expr.Value);
 
-        if (_locals.TryGetValue(expr, out int distance))
+        if (_distanceOf.TryGetValue(expr, out int distance))
         {
             _environment.AssignAt(distance, expr.Name, value);
         }
@@ -217,7 +215,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
     {
         // if we're here then we've visited the subclass declaration without issue
         // so the superclass in question must be defined, some distance away
-        int distance = _locals[expr];
+        int distance = _distanceOf[expr];
         var superclass = (LoxClass)_environment.GetAt(distance, "super");
 
         if (superclass.TryFindMethod(expr.Method.Lexeme, out LoxFunction? method))
@@ -400,7 +398,7 @@ internal class Interpreter : Expr.IVisitor<object>, Stmt.IVisitor<Void>
 
     private object LookUpVariable(Token name, Expr expr)
     {
-        if (_locals.TryGetValue(expr, out int distance))
+        if (_distanceOf.TryGetValue(expr, out int distance))
         {
             return _environment.GetAt(distance, name.Lexeme);
         }

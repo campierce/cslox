@@ -20,6 +20,11 @@ internal class LoxList : ILoxCallable
 
         public override object Get(Token name)
         {
+            // Notice: like other methods in Lox, these are created _per access_ (here, it's so we
+            // can close over the native list; in user methods, it's to close over `this`). That
+            // means two accessed methods will never be equal, even if they're the same method on
+            // the same list. That's not a problem per se; we make no promises to the user about
+            // method equality. Just something to be aware of.
             return name.Lexeme switch
             {
                 "add" => new Method(1, args =>
@@ -61,7 +66,7 @@ internal class LoxList : ILoxCallable
 
                 "toString" => new Method(0, _ =>
                 {
-                    return $"[{string.Join(", ", _list)}]";
+                    return $"list({string.Join(", ", _list)})";
                 }),
 
                 _ => throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.")

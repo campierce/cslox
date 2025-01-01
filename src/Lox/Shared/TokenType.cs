@@ -9,7 +9,7 @@ internal enum TokenType
     Comma,
     Dot,
     Else,
-    EOF,
+    Eof,
     Equal,
     EqualEqual,
     False,

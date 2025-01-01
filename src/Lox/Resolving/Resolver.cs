@@ -3,13 +3,24 @@ namespace Lox;
 /// <summary>
 /// Resolves local variables in the AST (i.e., finds where a variable is declared relative to where
 /// it is used). This allows us to detect some kinds of invalid programs before runtime, and it
-/// allows the interpreter to reuse the same resolution path (which is required for lexical scope).
+/// allows the interpreter to reuse the same resolution path (which is required for lexical scoping
+/// rules).
 /// </summary>
 internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 {
     #region State
     /// <summary>
-    /// The interpreter on which to store the results of this variable resolution pass.
+    /// The class context that surrounds the syntax node we are currently visiting.
+    /// </summary>
+    private ClassType _currentClass = ClassType.None;
+
+    /// <summary>
+    /// The function context that surrounds the syntax node we are currently visiting.
+    /// </summary>
+    private FunctionType _currentFunction = FunctionType.None;
+
+    /// <summary>
+    /// The interpreter on which to store the results of this resolution pass.
     /// </summary>
     private readonly Interpreter _interpreter;
 
@@ -23,20 +34,10 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     /// variables (like a function's name in its declaration) are considered initialized right away.
     /// </para>
     /// </summary>
-    private readonly Stack<Dictionary<string, bool>> _scopes;
-
-    /// <summary>
-    /// The class context that surrounds the syntax node we are currently visiting.
-    /// </summary>
-    private ClassType _currentClass;
-
-    /// <summary>
-    /// The function context that surrounds the syntax node we are currently visiting.
-    /// </summary>
-    private FunctionType _currentFunction;
+    private readonly Stack<Dictionary<string, bool>> _scopes = [];
     #endregion
 
-    #region Constructors
+    #region Constructor
     /// <summary>
     /// Creates a Resolver.
     /// </summary>
@@ -44,9 +45,6 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     public Resolver(Interpreter interpreter)
     {
         _interpreter = interpreter;
-        _scopes = new();
-        _currentClass = ClassType.None;
-        _currentFunction = FunctionType.None;
     }
     #endregion
 
@@ -263,7 +261,6 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
             Resolve(stmt.Value);
         }
-
         return default;
     }
 
@@ -289,7 +286,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
     #region Interpreter access
     /// <summary>
     /// Resolves the "distance" of a local variable -- i.e., finds the number of environments
-    /// between that variable's usage (in the given assignment/this/variable expr) and its
+    /// between that variable's usage (in the given assignment/super/this/variable expr) and its
     /// declaration. Passes the distance to the interpreter for use at runtime.
     /// </summary>
     /// <param name="expr">The expression in which the variable is used.</param>
@@ -396,9 +393,7 @@ internal class Resolver : Expr.IVisitor<Void>, Stmt.IVisitor<Void>
 
         _currentFunction = enclosingFnContext;
     }
-    #endregion Helpers
 
-    #region Enums
     private enum ClassType
     {
         None, // `this` is not permitted
