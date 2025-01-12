@@ -20,12 +20,12 @@ public class Lox
     /// <summary>
     /// The interpreter.
     /// </summary>
-    private static readonly Interpreter s_interpreter = new();
+    private static Interpreter s_interpreter = new();
 
     /// <summary>
     /// Whether the user wants to print the AST instead of executing it.
     /// </summary>
-    private static bool s_isPrintMode;
+    private static bool s_isPrintMode = false;
 
     /// <summary>
     /// The AST printer.
@@ -86,7 +86,45 @@ public class Lox
         await rootCommand.InvokeAsync(args);
     }
 
-    #region Internal API
+    #region API
+    /// <summary>
+    /// Runs a string of Lox source code. This is public to allow for non-CLI testing.
+    /// </summary>
+    /// <param name="source">The source code to run.</param>
+    public static void Run(string source)
+    {
+        Scanner scanner = new(source);
+        List<Token> tokens = scanner.ScanTokens();
+
+        Parser parser = new(tokens);
+        List<Stmt> statements = parser.Parse();
+
+        if (s_hadError) { return; }
+
+        Resolver resolver = new(s_interpreter);
+        resolver.Resolve(statements);
+
+        if (s_hadError) { return; }
+
+        if (s_isPrintMode)
+        {
+            s_printer.Print(statements);
+            return;
+        }
+
+        s_interpreter.Interpret(statements);
+    }
+
+    /// <summary>
+    /// Resets static state. Helps with non-CLI testing.
+    /// </summary>
+    public static void Reset()
+    {
+        s_hadError = false;
+        s_hadRuntimeError = false;
+        s_interpreter = new();
+    }
+
     /// <summary>
     /// Reports an error. (Call this overload when you don't have a token.)
     /// </summary>
@@ -196,34 +234,6 @@ public class Lox
 
         if (s_hadError) { System.Environment.Exit(64); } // EX_USAGE
         if (s_hadRuntimeError) { System.Environment.Exit(70); } // EX_SOFTWARE
-    }
-
-    /// <summary>
-    /// Runs a string of Lox source code.
-    /// </summary>
-    /// <param name="source">The source code to run.</param>
-    private static void Run(string source)
-    {
-        Scanner scanner = new(source);
-        List<Token> tokens = scanner.ScanTokens();
-
-        Parser parser = new(tokens);
-        List<Stmt> statements = parser.Parse();
-
-        if (s_hadError) { return; }
-
-        Resolver resolver = new(s_interpreter);
-        resolver.Resolve(statements);
-
-        if (s_hadError) { return; }
-
-        if (s_isPrintMode)
-        {
-            s_printer.Print(statements);
-            return;
-        }
-
-        s_interpreter.Interpret(statements);
     }
     #endregion
 }

@@ -6,7 +6,7 @@ SLN     := cslox.sln
 
 .DEFAULT_GOAL = run
 
-.PHONY: build clean publish run tree
+.PHONY: build clean publish run test tree
 
 build:
 	@echo "Building solution..."
@@ -28,6 +28,10 @@ publish:
 
 run:
 	@dotnet run --project $(LOX_PRJ) -- $(ARGS)
+
+test:
+	@echo "Running tests..."
+	@dotnet test $(SLN)
 
 tree:
 	@echo "Generating abstract syntax tree..."

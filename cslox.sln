@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lox", "src\Lox\Lox.csproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstGenerator", "src\AstGenerator\AstGenerator.csproj", "{CC1F8EDA-1B7E-4C6E-9D10-2F7E153C7E86}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{221DEC16-7771-4659-B264-FAE9B797575F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lox.Tests", "tests\Lox.Tests\Lox.Tests.csproj", "{9661F073-E4B2-4346-90A0-8BE20DEFE69C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +30,14 @@ Global
 		{CC1F8EDA-1B7E-4C6E-9D10-2F7E153C7E86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC1F8EDA-1B7E-4C6E-9D10-2F7E153C7E86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC1F8EDA-1B7E-4C6E-9D10-2F7E153C7E86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9661F073-E4B2-4346-90A0-8BE20DEFE69C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9661F073-E4B2-4346-90A0-8BE20DEFE69C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9661F073-E4B2-4346-90A0-8BE20DEFE69C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9661F073-E4B2-4346-90A0-8BE20DEFE69C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C8404FC0-CF60-44FD-BC52-F63ABEB9E0FE} = {E812FCCF-A0C7-48F0-BA87-F9D1446E7FDF}
 		{CC1F8EDA-1B7E-4C6E-9D10-2F7E153C7E86} = {E812FCCF-A0C7-48F0-BA87-F9D1446E7FDF}
+		{9661F073-E4B2-4346-90A0-8BE20DEFE69C} = {221DEC16-7771-4659-B264-FAE9B797575F}
 	EndGlobalSection
 EndGlobal
