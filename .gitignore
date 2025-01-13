@@ -11,5 +11,5 @@ obj/
 # test scripts
 /*.lox
 
-# published exe, for now
+# published exe
 /cslox
