@@ -6,6 +6,8 @@ public class LoxTests : IDisposable
     private readonly TextWriter originalStdout;
     private readonly StringWriter stderr;
     private readonly StringWriter stdout;
+    private string Stderr => stderr.ToString();
+    private string Stdout => stdout.ToString();
 
     public LoxTests()
     {
@@ -15,6 +17,7 @@ public class LoxTests : IDisposable
         stderr = new StringWriter();
         Console.SetOut(stdout);
         Console.SetError(stderr);
+        Lox.Reset();
     }
 
     public void Dispose()
@@ -27,11 +30,28 @@ public class LoxTests : IDisposable
     }
 
     [Fact]
-    public void HelloWorld()
+    public void NonAlphaNumericCharIsUnexpectedOutsideString()
     {
-        Lox.Reset();
-        Lox.Run("print \"hello world\";");
-        Assert.Equal("hello world\n", stdout.ToString());
+        var code = "var ñ;";
+        Lox.Run(code);
+        Assert.Contains("Unexpected character.", Stderr);
+    }
+
+    [Fact]
+    public void NonAlphaNumericCharIsFineInsideString()
+    {
+        var code = "print \"ñ\";";
+        Lox.Run(code);
+        var expected = "ñ\n";
+        Assert.Equal(expected, Stdout);
         Assert.Empty(stderr.ToString());
+    }
+
+    [Fact]
+    public void FailsToScanUnterminatedString()
+    {
+        var code = "print \"hello";
+        Lox.Run(code);
+        Assert.Contains("Unterminated string.", Stderr);
     }
 }
